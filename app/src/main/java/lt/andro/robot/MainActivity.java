@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.speech.tts.TextToSpeech;
 import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -48,12 +49,15 @@ import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
 import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings;
 
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
 public class MainActivity extends AppCompatActivity implements
         GoogleApiClient.OnConnectionFailedListener {
+
+    private TextToSpeech tts;
 
     @SuppressWarnings("WeakerAccess")
     public static class MessageViewHolder extends RecyclerView.ViewHolder {
@@ -234,13 +238,31 @@ public class MainActivity extends AppCompatActivity implements
         mSendButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                RobotMessage robotMessage = new RobotMessage(mMessageEditText.getText().toString(), mUsername,
+                String msg = mMessageEditText.getText().toString();
+                RobotMessage robotMessage = new RobotMessage(msg, mUsername,
                         mPhotoUrl);
                 mFirebaseDatabaseReference.child(MESSAGES_CHILD).push().setValue(robotMessage);
                 mMessageEditText.setText("");
                 mFirebaseAnalytics.logEvent(MESSAGE_SENT_EVENT, null);
             }
         });
+
+        tts = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                Log.d("Speech", "OnInit - Status [" + status + "]");
+
+                if (status == TextToSpeech.SUCCESS) {
+                    Log.d("Speech", "Success!");
+                    tts.setLanguage(Locale.UK);
+                }
+            }
+        });
+        tts.setLanguage(Locale.US);
+    }
+
+    private void speakText(String message, String id) {
+        tts.speak(message, TextToSpeech.QUEUE_ADD, null, id);
     }
 
     private Action getMessageViewAction(RobotMessage robotMessage) {
