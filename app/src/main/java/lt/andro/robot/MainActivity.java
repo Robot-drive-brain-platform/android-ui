@@ -1,22 +1,8 @@
-/**
- * Copyright Google Inc. All Rights Reserved.
- * <p/>
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * <p/>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p/>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package lt.andro.robot;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
@@ -39,8 +25,6 @@ import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
 import com.firebase.ui.database.FirebaseRecyclerAdapter;
-import com.google.android.gms.ads.AdRequest;
-import com.google.android.gms.ads.AdView;
 import com.google.android.gms.appinvite.AppInviteInvitation;
 import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.common.ConnectionResult;
@@ -71,10 +55,10 @@ import de.hdodenhof.circleimageview.CircleImageView;
 public class MainActivity extends AppCompatActivity implements
         GoogleApiClient.OnConnectionFailedListener {
 
-    public static class MessageViewHolder extends RecyclerView.ViewHolder {
-        public TextView messageTextView;
-        public TextView messengerTextView;
-        public CircleImageView messengerImageView;
+    private static class MessageViewHolder extends RecyclerView.ViewHolder {
+        TextView messageTextView;
+        TextView messengerTextView;
+        CircleImageView messengerImageView;
 
         public MessageViewHolder(View v) {
             super(v);
@@ -94,7 +78,6 @@ public class MainActivity extends AppCompatActivity implements
 
     private String mUsername;
     private String mPhotoUrl;
-    private SharedPreferences mSharedPreferences;
 
     private Button mSendButton;
     private RecyclerView mMessageRecyclerView;
@@ -106,7 +89,6 @@ public class MainActivity extends AppCompatActivity implements
     private FirebaseUser mFirebaseUser;
     private FirebaseAnalytics mFirebaseAnalytics;
     private EditText mMessageEditText;
-    private AdView mAdView;
     private FirebaseRemoteConfig mFirebaseRemoteConfig;
     private GoogleApiClient mGoogleApiClient;
 
@@ -115,7 +97,7 @@ public class MainActivity extends AppCompatActivity implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         mUsername = ANONYMOUS;
 
         // Initialize Firebase Auth
@@ -129,7 +111,10 @@ public class MainActivity extends AppCompatActivity implements
             return;
         } else {
             mUsername = mFirebaseUser.getDisplayName();
-            mPhotoUrl = mFirebaseUser.getPhotoUrl().toString();
+            Uri photoUrl = mFirebaseUser.getPhotoUrl();
+            if (photoUrl != null) {
+                mPhotoUrl = photoUrl.toString();
+            }
         }
 
         mGoogleApiClient = new GoogleApiClient.Builder(this)
@@ -197,11 +182,6 @@ public class MainActivity extends AppCompatActivity implements
 
         mMessageRecyclerView.setLayoutManager(mLinearLayoutManager);
         mMessageRecyclerView.setAdapter(mFirebaseAdapter);
-
-        // Initialize and request AdMob ad.
-        mAdView = (AdView) findViewById(R.id.adView);
-        AdRequest adRequest = new AdRequest.Builder().build();
-        mAdView.loadAd(adRequest);
 
         // Initialize Firebase Measurement.
         mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
@@ -271,7 +251,7 @@ public class MainActivity extends AppCompatActivity implements
 
     private Indexable getMessageIndexable(FriendlyMessage friendlyMessage) {
         PersonBuilder sender = Indexables.personBuilder()
-                .setIsSelf(mUsername == friendlyMessage.getName())
+                .setIsSelf(friendlyMessage.getName().equalsIgnoreCase(mUsername))
                 .setName(friendlyMessage.getName())
                 .setUrl(MESSAGE_URL.concat(friendlyMessage.getId() + "/sender"));
 
@@ -279,38 +259,12 @@ public class MainActivity extends AppCompatActivity implements
                 .setName(mUsername)
                 .setUrl(MESSAGE_URL.concat(friendlyMessage.getId() + "/recipient"));
 
-        Indexable messageToIndex = Indexables.messageBuilder()
+        return Indexables.messageBuilder()
                 .setName(friendlyMessage.getText())
                 .setUrl(MESSAGE_URL.concat(friendlyMessage.getId()))
                 .setSender(sender)
                 .setRecipient(recipient)
                 .build();
-
-        return messageToIndex;
-    }
-
-    @Override
-    public void onPause() {
-        if (mAdView != null) {
-            mAdView.pause();
-        }
-        super.onPause();
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        if (mAdView != null) {
-            mAdView.resume();
-        }
-    }
-
-    @Override
-    public void onDestroy() {
-        if (mAdView != null) {
-            mAdView.destroy();
-        }
-        super.onDestroy();
     }
 
     @Override
@@ -422,7 +376,7 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void onConnectionFailed(ConnectionResult connectionResult) {
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
         Log.d(TAG, "onConnectionFailed:" + connectionResult);
     }
 
