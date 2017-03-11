@@ -15,17 +15,17 @@
  */
 package lt.andro.robot;
 
-public class FriendlyMessage {
+public class RobotMessage {
 
     private String id;
     private String text;
     private String name;
     private String photoUrl;
 
-    public FriendlyMessage() {
+    public RobotMessage() {
     }
 
-    public FriendlyMessage(String text, String name, String photoUrl) {
+    public RobotMessage(String text, String name, String photoUrl) {
         this.text = text;
         this.name = name;
         this.photoUrl = photoUrl;

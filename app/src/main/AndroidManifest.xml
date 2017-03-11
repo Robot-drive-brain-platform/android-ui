@@ -27,7 +27,7 @@
                 <category android:name="android.intent.category.BROWSABLE"/>
 
                 <data
-                    android:host="friendlychat.firebase.google.com"
+                    android:host="robot-drive-brain-platform.firebase.google.com"
                     android:pathPrefix="/message"
                     android:scheme="http"
                     />

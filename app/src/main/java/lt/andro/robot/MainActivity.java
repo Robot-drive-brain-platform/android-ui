@@ -55,7 +55,8 @@ import de.hdodenhof.circleimageview.CircleImageView;
 public class MainActivity extends AppCompatActivity implements
         GoogleApiClient.OnConnectionFailedListener {
 
-    private static class MessageViewHolder extends RecyclerView.ViewHolder {
+    @SuppressWarnings("WeakerAccess")
+    public static class MessageViewHolder extends RecyclerView.ViewHolder {
         TextView messageTextView;
         TextView messengerTextView;
         CircleImageView messengerImageView;
@@ -74,7 +75,7 @@ public class MainActivity extends AppCompatActivity implements
     public static final int DEFAULT_MSG_LENGTH_LIMIT = 500;
     public static final String ANONYMOUS = "anonymous";
     private static final String MESSAGE_SENT_EVENT = "message_sent";
-    private static final String MESSAGE_URL = "http://friendlychat.firebase.google.com/message/";
+    private static final String MESSAGE_URL = "http://robot-drive-brain-platform.firebase.google.com/message/";
 
     private String mUsername;
     private String mPhotoUrl;
@@ -82,7 +83,7 @@ public class MainActivity extends AppCompatActivity implements
     private Button mSendButton;
     private RecyclerView mMessageRecyclerView;
     private LinearLayoutManager mLinearLayoutManager;
-    private FirebaseRecyclerAdapter<FriendlyMessage, MessageViewHolder> mFirebaseAdapter;
+    private FirebaseRecyclerAdapter<RobotMessage, MessageViewHolder> mFirebaseAdapter;
     private ProgressBar mProgressBar;
     private DatabaseReference mFirebaseDatabaseReference;
     private FirebaseAuth mFirebaseAuth;
@@ -128,40 +129,40 @@ public class MainActivity extends AppCompatActivity implements
         mLinearLayoutManager.setStackFromEnd(true);
 
         mFirebaseDatabaseReference = FirebaseDatabase.getInstance().getReference();
-        mFirebaseAdapter = new FirebaseRecyclerAdapter<FriendlyMessage, MessageViewHolder>(
-                FriendlyMessage.class,
+        mFirebaseAdapter = new FirebaseRecyclerAdapter<RobotMessage, MessageViewHolder>(
+                RobotMessage.class,
                 R.layout.item_message,
                 MessageViewHolder.class,
                 mFirebaseDatabaseReference.child(MESSAGES_CHILD)) {
 
             @Override
-            protected FriendlyMessage parseSnapshot(DataSnapshot snapshot) {
-                FriendlyMessage friendlyMessage = super.parseSnapshot(snapshot);
-                if (friendlyMessage != null) {
-                    friendlyMessage.setId(snapshot.getKey());
+            protected RobotMessage parseSnapshot(DataSnapshot snapshot) {
+                RobotMessage robotMessage = super.parseSnapshot(snapshot);
+                if (robotMessage != null) {
+                    robotMessage.setId(snapshot.getKey());
                 }
-                return friendlyMessage;
+                return robotMessage;
             }
 
             @Override
-            protected void populateViewHolder(MessageViewHolder viewHolder, FriendlyMessage friendlyMessage, int position) {
+            protected void populateViewHolder(MessageViewHolder viewHolder, RobotMessage robotMessage, int position) {
                 mProgressBar.setVisibility(ProgressBar.INVISIBLE);
-                viewHolder.messageTextView.setText(friendlyMessage.getText());
-                viewHolder.messengerTextView.setText(friendlyMessage.getName());
-                if (friendlyMessage.getPhotoUrl() == null) {
+                viewHolder.messageTextView.setText(robotMessage.getText());
+                viewHolder.messengerTextView.setText(robotMessage.getName());
+                if (robotMessage.getPhotoUrl() == null) {
                     viewHolder.messengerImageView.setImageDrawable(ContextCompat.getDrawable(MainActivity.this,
                             R.drawable.ic_account_circle_black_36dp));
                 } else {
                     Glide.with(MainActivity.this)
-                            .load(friendlyMessage.getPhotoUrl())
+                            .load(robotMessage.getPhotoUrl())
                             .into(viewHolder.messengerImageView);
                 }
 
                 // write this message to the on-device index
-                FirebaseAppIndex.getInstance().update(getMessageIndexable(friendlyMessage));
+                FirebaseAppIndex.getInstance().update(getMessageIndexable(robotMessage));
 
                 // log a view action on it
-                FirebaseUserActions.getInstance().end(getMessageViewAction(friendlyMessage));
+                FirebaseUserActions.getInstance().end(getMessageViewAction(robotMessage));
             }
         };
 
@@ -169,12 +170,12 @@ public class MainActivity extends AppCompatActivity implements
             @Override
             public void onItemRangeInserted(int positionStart, int itemCount) {
                 super.onItemRangeInserted(positionStart, itemCount);
-                int friendlyMessageCount = mFirebaseAdapter.getItemCount();
+                int msgCount = mFirebaseAdapter.getItemCount();
                 int lastVisiblePosition = mLinearLayoutManager.findLastCompletelyVisibleItemPosition();
                 // If the recycler view is initially being loaded or the user is at the bottom of the list, scroll
                 // to the bottom of the list to show the newly added message.
                 if (lastVisiblePosition == -1 ||
-                        (positionStart >= (friendlyMessageCount - 1) && lastVisiblePosition == (positionStart - 1))) {
+                        (positionStart >= (msgCount - 1) && lastVisiblePosition == (positionStart - 1))) {
                     mMessageRecyclerView.scrollToPosition(positionStart);
                 }
             }
@@ -198,7 +199,7 @@ public class MainActivity extends AppCompatActivity implements
         // Define default config values. Defaults are used when fetched config values are not
         // available. Eg: if an error occurred fetching values from the server.
         Map<String, Object> defaultConfigMap = new HashMap<>();
-        defaultConfigMap.put("friendly_msg_length", 10L);
+        defaultConfigMap.put(RobotPreferences.ROBOT_MSG_LENGTH, 10L);
 
         // Apply config settings and default values.
         mFirebaseRemoteConfig.setConfigSettings(firebaseRemoteConfigSettings);
@@ -209,7 +210,7 @@ public class MainActivity extends AppCompatActivity implements
 
         mMessageEditText = (EditText) findViewById(R.id.messageEditText);
         mMessageEditText.setFilters(new InputFilter[]{new InputFilter.LengthFilter(mSharedPreferences
-                .getInt(CodelabPreferences.FRIENDLY_MSG_LENGTH, DEFAULT_MSG_LENGTH_LIMIT))});
+                .getInt(RobotPreferences.ROBOT_MSG_LENGTH, DEFAULT_MSG_LENGTH_LIMIT))});
         mMessageEditText.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
@@ -233,35 +234,35 @@ public class MainActivity extends AppCompatActivity implements
         mSendButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                FriendlyMessage friendlyMessage = new FriendlyMessage(mMessageEditText.getText().toString(), mUsername,
+                RobotMessage robotMessage = new RobotMessage(mMessageEditText.getText().toString(), mUsername,
                         mPhotoUrl);
-                mFirebaseDatabaseReference.child(MESSAGES_CHILD).push().setValue(friendlyMessage);
+                mFirebaseDatabaseReference.child(MESSAGES_CHILD).push().setValue(robotMessage);
                 mMessageEditText.setText("");
                 mFirebaseAnalytics.logEvent(MESSAGE_SENT_EVENT, null);
             }
         });
     }
 
-    private Action getMessageViewAction(FriendlyMessage friendlyMessage) {
+    private Action getMessageViewAction(RobotMessage robotMessage) {
         return new Action.Builder(Action.Builder.VIEW_ACTION)
-                .setObject(friendlyMessage.getName(), MESSAGE_URL.concat(friendlyMessage.getId()))
+                .setObject(robotMessage.getName(), MESSAGE_URL.concat(robotMessage.getId()))
                 .setMetadata(new Action.Metadata.Builder().setUpload(false))
                 .build();
     }
 
-    private Indexable getMessageIndexable(FriendlyMessage friendlyMessage) {
+    private Indexable getMessageIndexable(RobotMessage robotMessage) {
         PersonBuilder sender = Indexables.personBuilder()
-                .setIsSelf(friendlyMessage.getName().equalsIgnoreCase(mUsername))
-                .setName(friendlyMessage.getName())
-                .setUrl(MESSAGE_URL.concat(friendlyMessage.getId() + "/sender"));
+                .setIsSelf(robotMessage.getName().equalsIgnoreCase(mUsername))
+                .setName(robotMessage.getName())
+                .setUrl(MESSAGE_URL.concat(robotMessage.getId() + "/sender"));
 
         PersonBuilder recipient = Indexables.personBuilder()
                 .setName(mUsername)
-                .setUrl(MESSAGE_URL.concat(friendlyMessage.getId() + "/recipient"));
+                .setUrl(MESSAGE_URL.concat(robotMessage.getId() + "/recipient"));
 
         return Indexables.messageBuilder()
-                .setName(friendlyMessage.getText())
-                .setUrl(MESSAGE_URL.concat(friendlyMessage.getId()))
+                .setName(robotMessage.getText())
+                .setUrl(MESSAGE_URL.concat(robotMessage.getId()))
                 .setSender(sender)
                 .setRecipient(recipient)
                 .build();
@@ -370,9 +371,9 @@ public class MainActivity extends AppCompatActivity implements
      * cached values.
      */
     private void applyRetrievedLengthLimit() {
-        Long friendly_msg_length = mFirebaseRemoteConfig.getLong("friendly_msg_length");
-        mMessageEditText.setFilters(new InputFilter[]{new InputFilter.LengthFilter(friendly_msg_length.intValue())});
-        Log.d(TAG, "FML is: " + friendly_msg_length);
+        Long msgLen = mFirebaseRemoteConfig.getLong(RobotPreferences.ROBOT_MSG_LENGTH);
+        mMessageEditText.setFilters(new InputFilter[]{new InputFilter.LengthFilter(msgLen.intValue())});
+        Log.d(TAG, "FML is: " + msgLen);
     }
 
     @Override

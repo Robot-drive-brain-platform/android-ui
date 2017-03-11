@@ -24,7 +24,7 @@ import com.google.firebase.messaging.FirebaseMessaging;
 public class MyFirebaseInstanceIdService extends FirebaseInstanceIdService {
 
     private static final String TAG = "MyFirebaseIIDService";
-    private static final String FRIENDLY_ENGAGE_TOPIC = "friendly_engage";
+    private static final String ROBOT_ENGAGE_TOPIC = "robot_engage";
 
     /**
      * The Application's current Instance ID token is no longer valid and thus a new one must be requested.
@@ -37,6 +37,6 @@ public class MyFirebaseInstanceIdService extends FirebaseInstanceIdService {
         Log.d(TAG, "FCM Token: " + token);
 
         // Once a token is generated, we subscribe to topic.
-        FirebaseMessaging.getInstance().subscribeToTopic(FRIENDLY_ENGAGE_TOPIC);
+        FirebaseMessaging.getInstance().subscribeToTopic(ROBOT_ENGAGE_TOPIC);
     }
 }
