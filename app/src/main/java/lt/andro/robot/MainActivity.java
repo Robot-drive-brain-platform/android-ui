@@ -182,6 +182,10 @@ public class MainActivity extends AppCompatActivity implements
                         (positionStart >= (msgCount - 1) && lastVisiblePosition == (positionStart - 1))) {
                     mMessageRecyclerView.scrollToPosition(positionStart);
                 }
+                if (lastVisiblePosition > 1) {
+                    RobotMessage item = mFirebaseAdapter.getItem(msgCount - 1);
+                    speakText(item.getText(), item.getId());
+                }
             }
         });
 
@@ -395,7 +399,7 @@ public class MainActivity extends AppCompatActivity implements
     private void applyRetrievedLengthLimit() {
         Long msgLen = mFirebaseRemoteConfig.getLong(RobotPreferences.ROBOT_MSG_LENGTH);
         mMessageEditText.setFilters(new InputFilter[]{new InputFilter.LengthFilter(msgLen.intValue())});
-        Log.d(TAG, "FML is: " + msgLen);
+        Log.d(TAG, "RML is: " + msgLen);
     }
 
     @Override
