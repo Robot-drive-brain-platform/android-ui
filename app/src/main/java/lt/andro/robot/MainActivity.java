@@ -381,12 +381,14 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public void celebrate() {
         showEmotion(VERY_HAPPY);
+        sendBluetoothCommandDirect(COMMAND_LED_ON);
         sendBluetoothCommandDirect(COMMAND_FLAG_ON);
         sendDelayed(FLAG_SHAKE_DELAY, COMMAND_FLAG_OFF);
         sendDelayed(2 * FLAG_SHAKE_DELAY, COMMAND_FLAG_ON);
         sendDelayed(3 * FLAG_SHAKE_DELAY, COMMAND_FLAG_OFF);
         sendDelayed(4 * FLAG_SHAKE_DELAY, COMMAND_FLAG_ON);
         sendDelayed(5 * FLAG_SHAKE_DELAY, COMMAND_FLAG_OFF);
+        sendDelayed(6 * FLAG_SHAKE_DELAY, COMMAND_LED_OFF);
     }
 
     @Override
