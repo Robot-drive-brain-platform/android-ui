@@ -463,6 +463,12 @@ public class MainActivity extends AppCompatActivity implements
             case "#play-music":
                 playMusic();
                 return;
+            case "#led-on":
+                turnLed(true);
+                return;
+            case "#led-off":
+                turnLed(false);
+                return;
             case "#celebrate-lithuanian-birthday":
                 sendBluetoothCommandDirect(COMMAND_LETTER_FLAG_ON);
                 sendDelayed(DELAY_LONG, COMMAND_LETTER_FLAG_OFF);
@@ -470,6 +476,15 @@ public class MainActivity extends AppCompatActivity implements
             default:
                 Timber.e("Unknown command: " + text);
         }
+    }
+
+    private void turnLed(boolean ledLightingState) {
+        if (ledLightingState) {
+            sendBluetoothCommandDirect(COMMAND_LETTER_LED_ON);
+        } else {
+            sendBluetoothCommandDirect(COMMAND_LETTER_LED_OFF);
+        }
+
     }
 
     private void playMusic() {
