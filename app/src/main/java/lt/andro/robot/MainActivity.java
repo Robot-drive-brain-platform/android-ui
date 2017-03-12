@@ -113,6 +113,7 @@ public class MainActivity extends AppCompatActivity implements
         BluetoothSPP.OnDataReceivedListener {
 
     public static final String RECORD_AUDIO_PERMISSION = Manifest.permission.RECORD_AUDIO;
+    public static final int FLAG_SHAKE_DELAY = 800;
 
     @BindView(R.id.main_voice_button)
     ImageButton voiceButton;
@@ -368,11 +369,11 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public void celebrate() {
         sendBluetoothCommandDirect(COMMAND_FLAG_ON);
-        sendDelayed(800, COMMAND_FLAG_OFF);
-        sendDelayed(1500, COMMAND_FLAG_ON);
-        sendDelayed(2000, COMMAND_FLAG_OFF);
-        sendDelayed(2500, COMMAND_FLAG_ON);
-        sendDelayed(3000, COMMAND_FLAG_OFF);
+        sendDelayed(FLAG_SHAKE_DELAY, COMMAND_FLAG_OFF);
+        sendDelayed(2 * FLAG_SHAKE_DELAY, COMMAND_FLAG_ON);
+        sendDelayed(3 * FLAG_SHAKE_DELAY, COMMAND_FLAG_OFF);
+        sendDelayed(4 * FLAG_SHAKE_DELAY, COMMAND_FLAG_ON);
+        sendDelayed(5 * FLAG_SHAKE_DELAY, COMMAND_FLAG_OFF);
     }
 
     @Override
