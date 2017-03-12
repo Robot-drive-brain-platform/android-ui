@@ -6,7 +6,9 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.speech.tts.TextToSpeech;
+import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
+import android.support.annotation.StringDef;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
@@ -49,6 +51,7 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
 import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings;
 
+import java.lang.annotation.Retention;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -58,6 +61,9 @@ import app.akexorcist.bluetotohspp.library.BluetoothState;
 import app.akexorcist.bluetotohspp.library.DeviceList;
 import de.hdodenhof.circleimageview.CircleImageView;
 import hugo.weaving.DebugLog;
+import timber.log.Timber;
+
+import static java.lang.annotation.RetentionPolicy.SOURCE;
 
 public class MainActivity extends AppCompatActivity implements
         GoogleApiClient.OnConnectionFailedListener,
@@ -65,8 +71,96 @@ public class MainActivity extends AppCompatActivity implements
         BluetoothSPP.BluetoothStateListener,
         BluetoothSPP.OnDataReceivedListener {
 
+    private static final int EMOTION_HAPPY = 201;
+    private static final int EMOTION_NEUTRAL = 202;
+    private static final int EMOTION_SAD = 203;
+    private static final int DIRECTION_NORTH_WEST = 301;
+    private static final int DIRECTION_UPWARD = 302;
+    private static final int DIRECTION_NORTH_EAST = 303;
+    private static final int DIRECTION_LEFT_QUICK = 304;
+    private static final int DIRECTION_LEFT = 3041;
+    private static final int DIRECTION_AROUND = 305;
+    private static final int DIRECTION_RIGHT_QUICK = 306;
+    private static final int DIRECTION_RIGHT = 3061;
+    private static final int DIRECTION_SOUTH_WEST = 307;
+    private static final int DIRECTION_BACK = 308;
+    private static final int DIRECTION_SOUTH_EAST = 309;
+
+    public static final String BT_COMMAND_SPEED_NORMAL = "6";
+    public static final int BT_REPEAT_COUNT_SINGLE = 1;
+    public static final int BT_REPEAT_COUNT_SHORT = 3;
+    public static final int BT_REPEAT_COUNT_NORMAL = 5;
+    public static final int BT_REPEAT_COUNT_LONG = 10;
+
+    public static final String COMMAND_LETTER_NORTH_WEST = "G";
+    public static final String COMMAND_LETTER_FORWARD = "F";
+    public static final String COMMAND_LETTER_NORTH_EAST = "I";
+    public static final String COMMAND_LETTER_LEFT = "L";
+    public static final String COMMAND_LETTER_LEFT_QUICK = "l";
+    public static final String COMMAND_LETTER_RIGHT = "R";
+    public static final String COMMAND_LETTER_RIGHT_QUICK = "r";
+    public static final String COMMAND_LETTER_SOUTH_WEST = "H";
+    public static final String COMMAND_LETTER_BACK = "B";
+    public static final String COMMAND_LETTER_SOUTH_EAST = "J";
+    public static final String COMMAND_LETTER_FLAG_ON = "U";
+    public static final String COMMAND_LETTER_FLAG_OFF = "u";
+    public static final String COMMAND_LETTER_LED_ON = "X";
+    public static final String COMMAND_LETTER_LED_OFF = "x";
+    public static final String COMMAND_LETTER_STOP = "S";
+    private static final int DELAY_LONG = 200;
+
     private TextToSpeech tts;
     private BluetoothSPP bt;
+
+    @Retention(SOURCE)
+    @IntDef({
+            DIRECTION_NORTH_WEST,
+            DIRECTION_UPWARD,
+            DIRECTION_NORTH_EAST,
+            DIRECTION_LEFT,
+            DIRECTION_LEFT_QUICK,
+            DIRECTION_AROUND,
+            DIRECTION_RIGHT_QUICK,
+            DIRECTION_RIGHT,
+            DIRECTION_SOUTH_WEST,
+            DIRECTION_BACK,
+            DIRECTION_SOUTH_EAST
+    })
+    @interface Direction {
+    }
+
+    @Retention(SOURCE)
+    @StringDef({
+            COMMAND_LETTER_NORTH_WEST,
+            COMMAND_LETTER_FORWARD,
+            COMMAND_LETTER_NORTH_EAST,
+            COMMAND_LETTER_LEFT_QUICK,
+            COMMAND_LETTER_LEFT,
+            COMMAND_LETTER_RIGHT_QUICK,
+            COMMAND_LETTER_RIGHT,
+            COMMAND_LETTER_SOUTH_WEST,
+            COMMAND_LETTER_BACK,
+            COMMAND_LETTER_SOUTH_EAST,
+            COMMAND_LETTER_FLAG_ON,
+            COMMAND_LETTER_FLAG_OFF,
+            COMMAND_LETTER_LED_ON,
+            COMMAND_LETTER_LED_OFF,
+            COMMAND_LETTER_STOP,
+            BT_COMMAND_SPEED_NORMAL
+    })
+    @interface RobotCommand {
+    }
+
+    @Retention(SOURCE)
+    @IntDef({
+            BT_REPEAT_COUNT_SINGLE,
+            BT_REPEAT_COUNT_SHORT,
+            BT_REPEAT_COUNT_NORMAL,
+            BT_REPEAT_COUNT_LONG
+    })
+    @interface BluetoothCommandRepeat {
+    }
+
 
     @DebugLog
     @Override
@@ -314,13 +408,133 @@ public class MainActivity extends AppCompatActivity implements
         bt.setupService();
 
         if (!bt.isBluetoothAvailable()) {
-            bt.send("6", true);
             showMessage("Bluetooth is not available.");
         }
     }
 
     private void executeCommand(String text) {
-        bt.send("F", true);
+        switch (text) {
+            case "#emotion-happy":
+                showEmotion(EMOTION_HAPPY);
+                return;
+            case "#emotion-neutral":
+                showEmotion(EMOTION_NEUTRAL);
+                return;
+            case "#emotion-sad":
+                showEmotion(EMOTION_SAD);
+                return;
+            case "#drive-north-west":
+                drive(DIRECTION_NORTH_WEST);
+                return;
+            case "#drive-upward":
+                drive(DIRECTION_UPWARD);
+                return;
+            case "#drive-north-east":
+                drive(DIRECTION_NORTH_EAST);
+                return;
+            case "#drive-left":
+                drive(DIRECTION_LEFT);
+                return;
+            case "#drive-left-quick":
+                drive(DIRECTION_LEFT_QUICK);
+                return;
+            case "#drive-around":
+                drive(DIRECTION_AROUND);
+                return;
+            case "#drive-right":
+                drive(DIRECTION_RIGHT);
+                return;
+            case "#drive-right-quick":
+                drive(DIRECTION_RIGHT_QUICK);
+                return;
+            case "#drive-south-west":
+                drive(DIRECTION_SOUTH_WEST);
+                return;
+            case "#drive-back":
+                drive(DIRECTION_BACK);
+                return;
+            case "#drive-south-east":
+                drive(DIRECTION_SOUTH_EAST);
+                return;
+            case "#play-music":
+                playMusic();
+                return;
+            case "#celebrate-lithuanian-birthday":
+                sendBluetoothCommandDirect(COMMAND_LETTER_FLAG_ON);
+                sendDelayed(DELAY_LONG, COMMAND_LETTER_FLAG_OFF);
+                return;
+            default:
+                Timber.e("Unknown command: " + text);
+        }
+    }
+
+    private void playMusic() {
+        // FIXME
+    }
+
+    private void sendDelayed(int delayLong, @RobotCommand String command) {
+    }
+
+    private void drive(@Direction int direction) {
+        sendBluetoothCommandDirect(BT_COMMAND_SPEED_NORMAL);
+        switch (direction) {
+            case DIRECTION_AROUND:
+                turnAround();
+                break;
+            case DIRECTION_BACK:
+                sendBluetoothCommand(BT_REPEAT_COUNT_LONG, COMMAND_LETTER_BACK);
+                break;
+            case DIRECTION_LEFT:
+                sendBluetoothCommand(BT_REPEAT_COUNT_LONG, COMMAND_LETTER_LEFT);
+                break;
+            case DIRECTION_LEFT_QUICK:
+                sendBluetoothCommand(BT_REPEAT_COUNT_LONG, COMMAND_LETTER_LEFT_QUICK);
+                break;
+            case DIRECTION_NORTH_EAST:
+                sendBluetoothCommand(BT_REPEAT_COUNT_LONG, COMMAND_LETTER_NORTH_EAST);
+                break;
+            case DIRECTION_NORTH_WEST:
+                sendBluetoothCommand(BT_REPEAT_COUNT_LONG, COMMAND_LETTER_NORTH_WEST);
+                break;
+            case DIRECTION_RIGHT:
+                sendBluetoothCommand(BT_REPEAT_COUNT_LONG, COMMAND_LETTER_RIGHT);
+                break;
+            case DIRECTION_RIGHT_QUICK:
+                sendBluetoothCommand(BT_REPEAT_COUNT_LONG, COMMAND_LETTER_RIGHT_QUICK);
+                break;
+            case DIRECTION_SOUTH_EAST:
+                sendBluetoothCommand(BT_REPEAT_COUNT_LONG, COMMAND_LETTER_SOUTH_EAST);
+                break;
+            case DIRECTION_SOUTH_WEST:
+                sendBluetoothCommand(BT_REPEAT_COUNT_LONG, COMMAND_LETTER_SOUTH_WEST);
+                break;
+            case DIRECTION_UPWARD:
+                sendBluetoothCommand(BT_REPEAT_COUNT_LONG, COMMAND_LETTER_FORWARD);
+                break;
+        }
+    }
+
+    private void turnAround() {
+//        sendBluetoothCommand(BT_REPEAT_COUNT_SHORT, COMMAND_LETTER_NORTH_EAST);
+//        sendBluetoothCommand(BT_REPEAT_COUNT_SHORT, COMMAND_LETTER_SOUTH_WEST);
+//        sendBluetoothCommand(BT_REPEAT_COUNT_SHORT, COMMAND_LETTER_NORTH_EAST);
+        sendBluetoothCommand(BT_REPEAT_COUNT_SINGLE, COMMAND_LETTER_STOP);
+    }
+
+    @DebugLog
+    private void sendBluetoothCommand(@BluetoothCommandRepeat int repeatCount, @RobotCommand String commandLetter) {
+        for (int i = 0; i < repeatCount; i++) {
+            sendBluetoothCommandDirect(commandLetter);
+        }
+    }
+
+    @DebugLog
+    private void sendBluetoothCommandDirect(@RobotCommand String commandLetter) {
+        bt.send(commandLetter, true);
+    }
+
+    private void showEmotion(int emotion) {
+
     }
 
 

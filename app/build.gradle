@@ -67,6 +67,9 @@ dependencies {
 
     // Bluetooth
     compile 'com.akexorcist:bluetoothspp:1.0.0'
+
+    // Timber logging
+    compile 'com.jakewharton.timber:timber:4.5.1'
 }
 
 apply plugin: 'com.google.gms.google-services'
