@@ -95,7 +95,6 @@ import static lt.andro.robot.MainActivity.Emotion.SAD_THINKING;
 import static lt.andro.robot.MainActivity.Emotion.TALKING;
 import static lt.andro.robot.MainActivity.Emotion.VERY_HAPPY;
 import static lt.andro.robot.MainActivity.RobotCommand.COMMAND_BACK;
-import static lt.andro.robot.MainActivity.RobotCommand.COMMAND_FLAG_OFF;
 import static lt.andro.robot.MainActivity.RobotCommand.COMMAND_FLAG_ON;
 import static lt.andro.robot.MainActivity.RobotCommand.COMMAND_FORWARD;
 import static lt.andro.robot.MainActivity.RobotCommand.COMMAND_LED_OFF;
@@ -197,7 +196,6 @@ public class MainActivity extends AppCompatActivity implements
             COMMAND_BACK,
             COMMAND_SOUTH_EAST,
             COMMAND_FLAG_ON,
-            COMMAND_FLAG_OFF,
             COMMAND_LED_ON,
             COMMAND_LED_OFF,
             COMMAND_STOP,
@@ -215,7 +213,6 @@ public class MainActivity extends AppCompatActivity implements
         String COMMAND_BACK = "B";
         String COMMAND_SOUTH_EAST = "J";
         String COMMAND_FLAG_ON = "U";
-        String COMMAND_FLAG_OFF = "u";
         String COMMAND_LED_ON = "X";
         String COMMAND_LED_OFF = "x";
         String COMMAND_STOP = "S";
@@ -370,6 +367,7 @@ public class MainActivity extends AppCompatActivity implements
                 turnLed(false);
                 return;
             case "#celebrate-lithuanian-birthday":
+                speakText("Congratulation for 27th Lithuania's Restoration of Independence Day!", "from backend id");
                 celebrate();
                 return;
             default:
@@ -382,12 +380,9 @@ public class MainActivity extends AppCompatActivity implements
     public void celebrate() {
         showEmotion(VERY_HAPPY);
         sendBluetoothCommandDirect(COMMAND_LED_ON);
-        sendBluetoothCommandDirect(COMMAND_FLAG_ON);
-        sendDelayed(FLAG_SHAKE_DELAY, COMMAND_FLAG_OFF);
-        sendDelayed(2 * FLAG_SHAKE_DELAY, COMMAND_FLAG_ON);
-        sendDelayed(3 * FLAG_SHAKE_DELAY, COMMAND_FLAG_OFF);
-        sendDelayed(4 * FLAG_SHAKE_DELAY, COMMAND_FLAG_ON);
-        sendDelayed(5 * FLAG_SHAKE_DELAY, COMMAND_FLAG_OFF);
+        sendDelayed(FLAG_SHAKE_DELAY, COMMAND_FLAG_ON);
+        sendDelayed(3 * FLAG_SHAKE_DELAY, COMMAND_FLAG_ON);
+        sendDelayed(5 * FLAG_SHAKE_DELAY, COMMAND_FLAG_ON);
         sendDelayed(6 * FLAG_SHAKE_DELAY, COMMAND_LED_OFF);
     }
 
