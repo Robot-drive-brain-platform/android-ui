@@ -1,4 +1,5 @@
 apply plugin: 'com.android.application'
+apply plugin: 'com.jakewharton.hugo'
 
 repositories {
     mavenLocal()
@@ -64,7 +65,8 @@ dependencies {
     androidTestCompile 'com.android.support.test:runner:0.5'
     androidTestCompile 'com.android.support:support-annotations:25.2.0'
 
-
+    // Bluetooth
+    compile 'com.akexorcist:bluetoothspp:1.0.0'
 }
 
 apply plugin: 'com.google.gms.google-services'
