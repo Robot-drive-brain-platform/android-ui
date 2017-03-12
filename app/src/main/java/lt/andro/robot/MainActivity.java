@@ -71,10 +71,10 @@ import de.hdodenhof.circleimageview.CircleImageView;
 import hugo.weaving.DebugLog;
 
 import static android.view.View.GONE;
+import static android.view.View.INVISIBLE;
 import static android.view.View.VISIBLE;
 import static java.lang.annotation.RetentionPolicy.SOURCE;
 import static lt.andro.robot.MainActivity.BluetoothCommandRepeat.COUNT_LONG;
-import static lt.andro.robot.MainActivity.BluetoothCommandRepeat.COUNT_SINGLE;
 import static lt.andro.robot.MainActivity.Direction.AROUND;
 import static lt.andro.robot.MainActivity.Direction.BACK;
 import static lt.andro.robot.MainActivity.Direction.LEFT;
@@ -114,13 +114,14 @@ public class MainActivity extends AppCompatActivity implements
 
     public static final String RECORD_AUDIO_PERMISSION = Manifest.permission.RECORD_AUDIO;
     public static final int FLAG_SHAKE_DELAY = 800;
+    public static final int DRIVE_DELAY = 1000;
 
     @BindView(R.id.main_voice_button)
     ImageButton voiceButton;
     @BindView(R.id.main_face)
     ImageView faceView;
 
-    private static final int DELAY_LONG = 3000;
+    private static final int DELAY_LONG = 1500;
 
     private TextToSpeech tts;
     private BluetoothSPP bt;
@@ -222,7 +223,7 @@ public class MainActivity extends AppCompatActivity implements
         int COUNT_SINGLE = 1;
         int COUNT_SHORT = 3;
         int COUNT_NORMAL = 5;
-        int COUNT_LONG = 10;
+        int COUNT_LONG = 7;
     }
 
 
@@ -433,7 +434,7 @@ public class MainActivity extends AppCompatActivity implements
 
             @Override
             protected void populateViewHolder(MessageViewHolder viewHolder, RobotMessage robotMessage, int position) {
-                mProgressBar.setVisibility(ProgressBar.INVISIBLE);
+                mProgressBar.setVisibility(INVISIBLE);
                 viewHolder.messageTextView.setText(robotMessage.getText());
                 viewHolder.messengerTextView.setText(robotMessage.getName());
                 if (robotMessage.getPhotoUrl() == null) {
@@ -577,7 +578,7 @@ public class MainActivity extends AppCompatActivity implements
     public void onSettingsButtonClick(View button) {
         boolean visible = mMessageRecyclerView.getVisibility() != VISIBLE;
 
-        mMessageRecyclerView.setVisibility(visible ? VISIBLE : GONE);
+        mMessageRecyclerView.setVisibility(visible ? VISIBLE : INVISIBLE);
         messageInputContainer.setVisibility(visible ? VISIBLE : GONE);
 
         faceView.setVisibility(visible ? GONE : VISIBLE);
@@ -652,10 +653,10 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     private void turnAround() {
-//        sendBluetoothCommand(BluetoothCommandRepeat.COUNT_SHORT, RobotCommand.COMMAND_NORTH_EAST);
-//        sendBluetoothCommand(BluetoothCommandRepeat.COUNT_SHORT, RobotCommand.COMMAND_SOUTH_WEST);
-//        sendBluetoothCommand(BluetoothCommandRepeat.COUNT_SHORT, RobotCommand.COMMAND_NORTH_EAST);
-        sendBluetoothCommand(COUNT_SINGLE, COMMAND_STOP, true);
+        sendBluetoothCommandDirect(RobotCommand.COMMAND_NORTH_EAST);
+        sendDelayed(DRIVE_DELAY, COMMAND_SOUTH_WEST);
+        sendDelayed(2 * DRIVE_DELAY, COMMAND_NORTH_EAST);
+        sendDelayed(3 * DRIVE_DELAY, COMMAND_STOP);
     }
 
     @DebugLog
