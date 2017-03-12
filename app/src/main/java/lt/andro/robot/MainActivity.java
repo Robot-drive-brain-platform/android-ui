@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.speech.tts.TextToSpeech;
+import android.support.annotation.DrawableRes;
 import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
 import android.support.annotation.StringDef;
@@ -25,6 +26,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -61,11 +64,44 @@ import java.util.Map;
 import app.akexorcist.bluetotohspp.library.BluetoothSPP;
 import app.akexorcist.bluetotohspp.library.BluetoothState;
 import app.akexorcist.bluetotohspp.library.DeviceList;
+import butterknife.BindView;
 import de.hdodenhof.circleimageview.CircleImageView;
 import hugo.weaving.DebugLog;
 import timber.log.Timber;
 
 import static java.lang.annotation.RetentionPolicy.SOURCE;
+import static lt.andro.robot.MainActivity.BluetoothCommandRepeat.COUNT_LONG;
+import static lt.andro.robot.MainActivity.BluetoothCommandRepeat.COUNT_SINGLE;
+import static lt.andro.robot.MainActivity.Direction.AROUND;
+import static lt.andro.robot.MainActivity.Direction.BACK;
+import static lt.andro.robot.MainActivity.Direction.LEFT;
+import static lt.andro.robot.MainActivity.Direction.LEFT_QUICK;
+import static lt.andro.robot.MainActivity.Direction.NORTH_EAST;
+import static lt.andro.robot.MainActivity.Direction.NORTH_WEST;
+import static lt.andro.robot.MainActivity.Direction.RIGHT;
+import static lt.andro.robot.MainActivity.Direction.RIGHT_QUICK;
+import static lt.andro.robot.MainActivity.Direction.SOUTH_EAST;
+import static lt.andro.robot.MainActivity.Direction.SOUTH_WEST;
+import static lt.andro.robot.MainActivity.Direction.UPWARD;
+import static lt.andro.robot.MainActivity.Emotion.HAPPY;
+import static lt.andro.robot.MainActivity.Emotion.NEUTRAL;
+import static lt.andro.robot.MainActivity.Emotion.SAD;
+import static lt.andro.robot.MainActivity.RobotCommand.COMMAND_BACK;
+import static lt.andro.robot.MainActivity.RobotCommand.COMMAND_FLAG_OFF;
+import static lt.andro.robot.MainActivity.RobotCommand.COMMAND_FLAG_ON;
+import static lt.andro.robot.MainActivity.RobotCommand.COMMAND_FORWARD;
+import static lt.andro.robot.MainActivity.RobotCommand.COMMAND_LED_OFF;
+import static lt.andro.robot.MainActivity.RobotCommand.COMMAND_LED_ON;
+import static lt.andro.robot.MainActivity.RobotCommand.COMMAND_LEFT;
+import static lt.andro.robot.MainActivity.RobotCommand.COMMAND_LEFT_QUICK;
+import static lt.andro.robot.MainActivity.RobotCommand.COMMAND_NORTH_EAST;
+import static lt.andro.robot.MainActivity.RobotCommand.COMMAND_NORTH_WEST;
+import static lt.andro.robot.MainActivity.RobotCommand.COMMAND_RIGHT;
+import static lt.andro.robot.MainActivity.RobotCommand.COMMAND_RIGHT_QUICK;
+import static lt.andro.robot.MainActivity.RobotCommand.COMMAND_SOUTH_EAST;
+import static lt.andro.robot.MainActivity.RobotCommand.COMMAND_SOUTH_WEST;
+import static lt.andro.robot.MainActivity.RobotCommand.COMMAND_STOP;
+import static lt.andro.robot.MainActivity.RobotCommand.SPEED_NORMAL;
 
 public class MainActivity extends AppCompatActivity implements
         GoogleApiClient.OnConnectionFailedListener,
@@ -75,42 +111,11 @@ public class MainActivity extends AppCompatActivity implements
 
     public static final String RECORD_AUDIO_PERMISSION = Manifest.permission.RECORD_AUDIO;
 
-    private static final int EMOTION_HAPPY = 201;
-    private static final int EMOTION_NEUTRAL = 202;
-    private static final int EMOTION_SAD = 203;
-    private static final int DIRECTION_NORTH_WEST = 301;
-    private static final int DIRECTION_UPWARD = 302;
-    private static final int DIRECTION_NORTH_EAST = 303;
-    private static final int DIRECTION_LEFT_QUICK = 304;
-    private static final int DIRECTION_LEFT = 3041;
-    private static final int DIRECTION_AROUND = 305;
-    private static final int DIRECTION_RIGHT_QUICK = 306;
-    private static final int DIRECTION_RIGHT = 3061;
-    private static final int DIRECTION_SOUTH_WEST = 307;
-    private static final int DIRECTION_BACK = 308;
-    private static final int DIRECTION_SOUTH_EAST = 309;
+    @BindView(R.id.main_voice_button)
+    ImageButton voiceButton;
+    @BindView(R.id.main_face)
+    ImageView faceView;
 
-    public static final String BT_COMMAND_SPEED_NORMAL = "6";
-    public static final int BT_REPEAT_COUNT_SINGLE = 1;
-    public static final int BT_REPEAT_COUNT_SHORT = 3;
-    public static final int BT_REPEAT_COUNT_NORMAL = 5;
-    public static final int BT_REPEAT_COUNT_LONG = 10;
-
-    public static final String COMMAND_LETTER_NORTH_WEST = "G";
-    public static final String COMMAND_LETTER_FORWARD = "F";
-    public static final String COMMAND_LETTER_NORTH_EAST = "I";
-    public static final String COMMAND_LETTER_LEFT = "L";
-    public static final String COMMAND_LETTER_LEFT_QUICK = "l";
-    public static final String COMMAND_LETTER_RIGHT = "R";
-    public static final String COMMAND_LETTER_RIGHT_QUICK = "r";
-    public static final String COMMAND_LETTER_SOUTH_WEST = "H";
-    public static final String COMMAND_LETTER_BACK = "B";
-    public static final String COMMAND_LETTER_SOUTH_EAST = "J";
-    public static final String COMMAND_LETTER_FLAG_ON = "U";
-    public static final String COMMAND_LETTER_FLAG_OFF = "u";
-    public static final String COMMAND_LETTER_LED_ON = "X";
-    public static final String COMMAND_LETTER_LED_OFF = "x";
-    public static final String COMMAND_LETTER_STOP = "S";
     private static final int DELAY_LONG = 3000;
 
     private TextToSpeech tts;
@@ -120,51 +125,99 @@ public class MainActivity extends AppCompatActivity implements
 
     @Retention(SOURCE)
     @IntDef({
-            DIRECTION_NORTH_WEST,
-            DIRECTION_UPWARD,
-            DIRECTION_NORTH_EAST,
-            DIRECTION_LEFT,
-            DIRECTION_LEFT_QUICK,
-            DIRECTION_AROUND,
-            DIRECTION_RIGHT_QUICK,
-            DIRECTION_RIGHT,
-            DIRECTION_SOUTH_WEST,
-            DIRECTION_BACK,
-            DIRECTION_SOUTH_EAST
+            Emotion.HAPPY,
+            Emotion.NEUTRAL,
+            Emotion.SAD,
+            Emotion.MUSIC,
+            Emotion.EXCLAMATION,
+            Emotion.SAD_THINKING,
+            Emotion.TALKING,
+            Emotion.VERY_HAPPY,
     })
-    @interface Direction {
-    }
-
-    @Retention(SOURCE)
-    @StringDef({
-            COMMAND_LETTER_NORTH_WEST,
-            COMMAND_LETTER_FORWARD,
-            COMMAND_LETTER_NORTH_EAST,
-            COMMAND_LETTER_LEFT_QUICK,
-            COMMAND_LETTER_LEFT,
-            COMMAND_LETTER_RIGHT_QUICK,
-            COMMAND_LETTER_RIGHT,
-            COMMAND_LETTER_SOUTH_WEST,
-            COMMAND_LETTER_BACK,
-            COMMAND_LETTER_SOUTH_EAST,
-            COMMAND_LETTER_FLAG_ON,
-            COMMAND_LETTER_FLAG_OFF,
-            COMMAND_LETTER_LED_ON,
-            COMMAND_LETTER_LED_OFF,
-            COMMAND_LETTER_STOP,
-            BT_COMMAND_SPEED_NORMAL
-    })
-    @interface RobotCommand {
+    @interface Emotion {
+        int HAPPY = 201;
+        int NEUTRAL = 202;
+        int SAD = 203;
+        int MUSIC = 204;
+        int EXCLAMATION = 205;
+        int SAD_THINKING = 206;
+        int TALKING = 207;
+        int VERY_HAPPY = 208;
     }
 
     @Retention(SOURCE)
     @IntDef({
-            BT_REPEAT_COUNT_SINGLE,
-            BT_REPEAT_COUNT_SHORT,
-            BT_REPEAT_COUNT_NORMAL,
-            BT_REPEAT_COUNT_LONG
+            NORTH_WEST,
+            UPWARD,
+            NORTH_EAST,
+            LEFT_QUICK,
+            LEFT,
+            AROUND,
+            RIGHT_QUICK,
+            RIGHT,
+            SOUTH_WEST,
+            BACK,
+            SOUTH_EAST,
     })
+    @interface Direction {
+        int NORTH_WEST = 301;
+        int UPWARD = 302;
+        int NORTH_EAST = 303;
+        int LEFT_QUICK = 304;
+        int LEFT = 3041;
+        int AROUND = 305;
+        int RIGHT_QUICK = 306;
+        int RIGHT = 3061;
+        int SOUTH_WEST = 307;
+        int BACK = 308;
+        int SOUTH_EAST = 309;
+    }
+
+    @Retention(SOURCE)
+    @StringDef({
+            COMMAND_NORTH_WEST,
+            COMMAND_FORWARD,
+            COMMAND_NORTH_EAST,
+            COMMAND_LEFT,
+            COMMAND_LEFT_QUICK,
+            COMMAND_RIGHT,
+            COMMAND_RIGHT_QUICK,
+            COMMAND_SOUTH_WEST,
+            COMMAND_BACK,
+            COMMAND_SOUTH_EAST,
+            COMMAND_FLAG_ON,
+            COMMAND_FLAG_OFF,
+            COMMAND_LED_ON,
+            COMMAND_LED_OFF,
+            COMMAND_STOP,
+            SPEED_NORMAL,
+    })
+    @interface RobotCommand {
+        String COMMAND_NORTH_WEST = "G";
+        String COMMAND_FORWARD = "F";
+        String COMMAND_NORTH_EAST = "I";
+        String COMMAND_LEFT = "L";
+        String COMMAND_LEFT_QUICK = "l";
+        String COMMAND_RIGHT = "R";
+        String COMMAND_RIGHT_QUICK = "r";
+        String COMMAND_SOUTH_WEST = "H";
+        String COMMAND_BACK = "B";
+        String COMMAND_SOUTH_EAST = "J";
+        String COMMAND_FLAG_ON = "U";
+        String COMMAND_FLAG_OFF = "u";
+        String COMMAND_LED_ON = "X";
+        String COMMAND_LED_OFF = "x";
+        String COMMAND_STOP = "S";
+        String SPEED_NORMAL = "6";
+    }
+
+    @Retention(SOURCE)
+    @IntDef()
     @interface BluetoothCommandRepeat {
+        int COUNT_SINGLE = 1;
+        int COUNT_SHORT = 3;
+        int COUNT_NORMAL = 5;
+        int COUNT_LONG = 10;
     }
 
 
@@ -238,46 +291,46 @@ public class MainActivity extends AppCompatActivity implements
     private void executeCommand(String text) {
         switch (text) {
             case "#emotion-happy":
-                showEmotion(EMOTION_HAPPY);
+                showEmotion(HAPPY);
                 return;
             case "#emotion-neutral":
-                showEmotion(EMOTION_NEUTRAL);
+                showEmotion(NEUTRAL);
                 return;
             case "#emotion-sad":
-                showEmotion(EMOTION_SAD);
+                showEmotion(SAD);
                 return;
             case "#drive-north-west":
-                drive(DIRECTION_NORTH_WEST);
+                drive(NORTH_WEST);
                 return;
             case "#drive-upward":
-                drive(DIRECTION_UPWARD);
+                drive(UPWARD);
                 return;
             case "#drive-north-east":
-                drive(DIRECTION_NORTH_EAST);
+                drive(NORTH_EAST);
                 return;
             case "#drive-left":
-                drive(DIRECTION_LEFT);
+                drive(LEFT);
                 return;
             case "#drive-left-quick":
-                drive(DIRECTION_LEFT_QUICK);
+                drive(LEFT_QUICK);
                 return;
             case "#drive-around":
-                drive(DIRECTION_AROUND);
+                drive(AROUND);
                 return;
             case "#drive-right":
-                drive(DIRECTION_RIGHT);
+                drive(RIGHT);
                 return;
             case "#drive-right-quick":
-                drive(DIRECTION_RIGHT_QUICK);
+                drive(RIGHT_QUICK);
                 return;
             case "#drive-south-west":
-                drive(DIRECTION_SOUTH_WEST);
+                drive(SOUTH_WEST);
                 return;
             case "#drive-back":
-                drive(DIRECTION_BACK);
+                drive(BACK);
                 return;
             case "#drive-south-east":
-                drive(DIRECTION_SOUTH_EAST);
+                drive(SOUTH_EAST);
                 return;
             case "#play-music":
                 playMusic();
@@ -289,8 +342,8 @@ public class MainActivity extends AppCompatActivity implements
                 turnLed(false);
                 return;
             case "#celebrate-lithuanian-birthday":
-                sendBluetoothCommandDirect(COMMAND_LETTER_FLAG_ON);
-                sendDelayed(DELAY_LONG, COMMAND_LETTER_FLAG_OFF);
+                sendBluetoothCommandDirect(COMMAND_FLAG_ON);
+                sendDelayed(DELAY_LONG, COMMAND_FLAG_OFF);
                 return;
             default:
                 Timber.e("Unknown command: " + text);
@@ -493,9 +546,9 @@ public class MainActivity extends AppCompatActivity implements
 
     private void turnLed(boolean ledLightingState) {
         if (ledLightingState) {
-            sendBluetoothCommandDirect(COMMAND_LETTER_LED_ON);
+            sendBluetoothCommandDirect(COMMAND_LED_ON);
         } else {
-            sendBluetoothCommandDirect(COMMAND_LETTER_LED_OFF);
+            sendBluetoothCommandDirect(COMMAND_LED_OFF);
         }
 
     }
@@ -514,49 +567,49 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     private void drive(@Direction int direction) {
-        sendBluetoothCommandDirect(BT_COMMAND_SPEED_NORMAL);
+        sendBluetoothCommandDirect(SPEED_NORMAL);
         switch (direction) {
-            case DIRECTION_AROUND:
+            case AROUND:
                 turnAround();
                 break;
-            case DIRECTION_BACK:
-                sendBluetoothCommand(BT_REPEAT_COUNT_LONG, COMMAND_LETTER_BACK, true);
+            case BACK:
+                sendBluetoothCommand(COUNT_LONG, COMMAND_BACK, true);
                 break;
-            case DIRECTION_LEFT:
-                sendBluetoothCommand(BT_REPEAT_COUNT_LONG, COMMAND_LETTER_LEFT, true);
+            case LEFT:
+                sendBluetoothCommand(COUNT_LONG, COMMAND_LEFT, true);
                 break;
-            case DIRECTION_LEFT_QUICK:
-                sendBluetoothCommand(BT_REPEAT_COUNT_LONG, COMMAND_LETTER_LEFT_QUICK, true);
+            case LEFT_QUICK:
+                sendBluetoothCommand(COUNT_LONG, COMMAND_LEFT_QUICK, true);
                 break;
-            case DIRECTION_NORTH_EAST:
-                sendBluetoothCommand(BT_REPEAT_COUNT_LONG, COMMAND_LETTER_NORTH_EAST, true);
+            case NORTH_EAST:
+                sendBluetoothCommand(COUNT_LONG, COMMAND_NORTH_EAST, true);
                 break;
-            case DIRECTION_NORTH_WEST:
-                sendBluetoothCommand(BT_REPEAT_COUNT_LONG, COMMAND_LETTER_NORTH_WEST, true);
+            case NORTH_WEST:
+                sendBluetoothCommand(COUNT_LONG, COMMAND_NORTH_WEST, true);
                 break;
-            case DIRECTION_RIGHT:
-                sendBluetoothCommand(BT_REPEAT_COUNT_LONG, COMMAND_LETTER_RIGHT, true);
+            case RIGHT:
+                sendBluetoothCommand(COUNT_LONG, COMMAND_RIGHT, true);
                 break;
-            case DIRECTION_RIGHT_QUICK:
-                sendBluetoothCommand(BT_REPEAT_COUNT_LONG, COMMAND_LETTER_RIGHT_QUICK, true);
+            case RIGHT_QUICK:
+                sendBluetoothCommand(COUNT_LONG, COMMAND_RIGHT_QUICK, true);
                 break;
-            case DIRECTION_SOUTH_EAST:
-                sendBluetoothCommand(BT_REPEAT_COUNT_LONG, COMMAND_LETTER_SOUTH_EAST, true);
+            case SOUTH_EAST:
+                sendBluetoothCommand(COUNT_LONG, COMMAND_SOUTH_EAST, true);
                 break;
-            case DIRECTION_SOUTH_WEST:
-                sendBluetoothCommand(BT_REPEAT_COUNT_LONG, COMMAND_LETTER_SOUTH_WEST, true);
+            case SOUTH_WEST:
+                sendBluetoothCommand(COUNT_LONG, COMMAND_SOUTH_WEST, true);
                 break;
-            case DIRECTION_UPWARD:
-                sendBluetoothCommand(BT_REPEAT_COUNT_LONG, COMMAND_LETTER_FORWARD, true);
+            case UPWARD:
+                sendBluetoothCommand(COUNT_LONG, COMMAND_FORWARD, true);
                 break;
         }
     }
 
     private void turnAround() {
-//        sendBluetoothCommand(BT_REPEAT_COUNT_SHORT, COMMAND_LETTER_NORTH_EAST);
-//        sendBluetoothCommand(BT_REPEAT_COUNT_SHORT, COMMAND_LETTER_SOUTH_WEST);
-//        sendBluetoothCommand(BT_REPEAT_COUNT_SHORT, COMMAND_LETTER_NORTH_EAST);
-        sendBluetoothCommand(BT_REPEAT_COUNT_SINGLE, COMMAND_LETTER_STOP, true);
+//        sendBluetoothCommand(BluetoothCommandRepeat.COUNT_SHORT, RobotCommand.COMMAND_NORTH_EAST);
+//        sendBluetoothCommand(BluetoothCommandRepeat.COUNT_SHORT, RobotCommand.COMMAND_SOUTH_WEST);
+//        sendBluetoothCommand(BluetoothCommandRepeat.COUNT_SHORT, RobotCommand.COMMAND_NORTH_EAST);
+        sendBluetoothCommand(COUNT_SINGLE, COMMAND_STOP, true);
     }
 
     @DebugLog
@@ -570,7 +623,7 @@ public class MainActivity extends AppCompatActivity implements
     private void sendBluetoothCommand(@BluetoothCommandRepeat int repeatCount, @RobotCommand String commandLetter, boolean stopAfterDelay) {
         sendBluetoothCommand(repeatCount, commandLetter);
         if (stopAfterDelay) {
-            sendDelayed(DELAY_LONG, COMMAND_LETTER_STOP);
+            sendDelayed(DELAY_LONG, COMMAND_STOP);
         }
     }
 
@@ -580,8 +633,35 @@ public class MainActivity extends AppCompatActivity implements
         bt.send(commandLetter, true);
     }
 
-    private void showEmotion(int emotion) {
-
+    private void showEmotion(@Emotion int emotion) {
+        @DrawableRes int face = R.drawable.face_happy;
+        switch (emotion) {
+            case Emotion.EXCLAMATION:
+                face = R.drawable.face_exclamation;
+                break;
+            case Emotion.HAPPY:
+                face = R.drawable.face_very_happy;
+                break;
+            case Emotion.MUSIC:
+                face = R.drawable.face_music;
+                break;
+            case Emotion.NEUTRAL:
+                face = R.drawable.face_happy;
+                break;
+            case Emotion.SAD_THINKING:
+                face = R.drawable.face_sad_thinking;
+                break;
+            case Emotion.SAD:
+                face = R.drawable.face_sad;
+                break;
+            case Emotion.TALKING:
+                face = R.drawable.face_talking;
+                break;
+            case Emotion.VERY_HAPPY:
+                face = R.drawable.face_very_happy;
+                break;
+        }
+        faceView.setImageResource(face);
     }
 
 
