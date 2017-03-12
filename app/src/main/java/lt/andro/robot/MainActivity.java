@@ -184,7 +184,10 @@ public class MainActivity extends AppCompatActivity implements
                 }
                 if (lastVisiblePosition > 1) {
                     RobotMessage item = mFirebaseAdapter.getItem(msgCount - 1);
-                    speakText(item.getText(), item.getId());
+                    String text = item.getText();
+                    if (!text.startsWith("#")) {
+                        speakText(text, item.getId());
+                    }
                 }
             }
         });
