@@ -11,6 +11,7 @@
     tools:context="lt.andro.robot.MainActivity"
     >
 
+
     <android.support.v7.widget.RecyclerView
         android:id="@+id/messageRecyclerView"
         android:layout_width="match_parent"
@@ -23,7 +24,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
         android:orientation="horizontal"
         >
@@ -35,6 +35,7 @@
             android:layout_gravity="center_vertical"
             android:layout_weight="1"
             android:inputType="text"
+            tools:ignore="LabelFor"
             />
 
         <Button
@@ -56,4 +57,27 @@
         android:layout_centerHorizontal="true"
         android:layout_centerVertical="true"
         />
+
+    <ImageView
+        android:id="@+id/main_face"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="@string/robot_face_content_description"
+        android:padding="56dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/face_happy"
+        />
+
+    <ImageButton
+        android:id="@+id/main_voice_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:background="@color/black"
+        android:contentDescription="@string/voice_control_button"
+        android:padding="48dp"
+        android:src="@drawable/ic_mic_off_white_24dp"
+        />
+
 </RelativeLayout>
