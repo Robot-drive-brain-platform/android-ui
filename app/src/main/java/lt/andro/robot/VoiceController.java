@@ -17,6 +17,8 @@ import ai.api.model.Result;
 import hugo.weaving.DebugLog;
 import timber.log.Timber;
 
+import static lt.andro.robot.MainActivity.Emotion.SAD_THINKING;
+
 /**
  * @author Vilius Kraujutis
  * @since 2017-03-12
@@ -47,7 +49,7 @@ class VoiceController implements AIListener {
             onResultReceived(res);
         } else {
             view.showMessage("No result understood");
-            view.showEmotion(MainActivity.Emotion.SAD_THINKING);
+            view.showEmotion(SAD_THINKING);
         }
     }
 

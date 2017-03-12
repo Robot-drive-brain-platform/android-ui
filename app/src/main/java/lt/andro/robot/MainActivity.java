@@ -86,9 +86,14 @@ import static lt.andro.robot.MainActivity.Direction.RIGHT_QUICK;
 import static lt.andro.robot.MainActivity.Direction.SOUTH_EAST;
 import static lt.andro.robot.MainActivity.Direction.SOUTH_WEST;
 import static lt.andro.robot.MainActivity.Direction.UPWARD;
+import static lt.andro.robot.MainActivity.Emotion.EXCLAMATION;
 import static lt.andro.robot.MainActivity.Emotion.HAPPY;
+import static lt.andro.robot.MainActivity.Emotion.MUSIC;
 import static lt.andro.robot.MainActivity.Emotion.NEUTRAL;
 import static lt.andro.robot.MainActivity.Emotion.SAD;
+import static lt.andro.robot.MainActivity.Emotion.SAD_THINKING;
+import static lt.andro.robot.MainActivity.Emotion.TALKING;
+import static lt.andro.robot.MainActivity.Emotion.VERY_HAPPY;
 import static lt.andro.robot.MainActivity.RobotCommand.COMMAND_BACK;
 import static lt.andro.robot.MainActivity.RobotCommand.COMMAND_FLAG_OFF;
 import static lt.andro.robot.MainActivity.RobotCommand.COMMAND_FLAG_ON;
@@ -134,11 +139,11 @@ public class MainActivity extends AppCompatActivity implements
             Emotion.HAPPY,
             Emotion.NEUTRAL,
             Emotion.SAD,
-            Emotion.MUSIC,
-            Emotion.EXCLAMATION,
-            Emotion.SAD_THINKING,
-            Emotion.TALKING,
-            Emotion.VERY_HAPPY,
+            MUSIC,
+            EXCLAMATION,
+            SAD_THINKING,
+            TALKING,
+            VERY_HAPPY,
     })
     public @interface Emotion {
         int HAPPY = 201;
@@ -307,6 +312,12 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public void executeCommand(String text) {
         switch (text) {
+            case "#starting-writing":
+                showEmotion(SAD_THINKING);
+                return;
+            case "#stopped-writing":
+                showEmotion(TALKING);
+                return;
             case "#emotion-happy":
                 showEmotion(HAPPY);
                 return;
@@ -369,6 +380,7 @@ public class MainActivity extends AppCompatActivity implements
     @DebugLog
     @Override
     public void celebrate() {
+        showEmotion(VERY_HAPPY);
         sendBluetoothCommandDirect(COMMAND_FLAG_ON);
         sendDelayed(FLAG_SHAKE_DELAY, COMMAND_FLAG_OFF);
         sendDelayed(2 * FLAG_SHAKE_DELAY, COMMAND_FLAG_ON);
@@ -380,6 +392,9 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public void showListening(boolean listening) {
         voiceButton.setImageResource(listening ? R.drawable.ic_mic_white_24dp : R.drawable.ic_mic_off_white_24dp);
+        if (listening) {
+            showEmotion(NEUTRAL);
+        }
     }
 
     @Override
@@ -594,6 +609,7 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void turnLed(boolean ledLightingState) {
+        showEmotion(EXCLAMATION);
         if (ledLightingState) {
             sendBluetoothCommandDirect(COMMAND_LED_ON);
         } else {
@@ -602,6 +618,8 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     private void playMusic() {
+        showEmotion(MUSIC);
+        // TODO
     }
 
     private void sendDelayed(long delay, @RobotCommand final String command) {
@@ -684,28 +702,28 @@ public class MainActivity extends AppCompatActivity implements
     public void showEmotion(@Emotion int emotion) {
         @DrawableRes int face = R.drawable.face_happy;
         switch (emotion) {
-            case Emotion.EXCLAMATION:
+            case EXCLAMATION:
                 face = R.drawable.face_exclamation;
                 break;
             case Emotion.HAPPY:
                 face = R.drawable.face_very_happy;
                 break;
-            case Emotion.MUSIC:
+            case MUSIC:
                 face = R.drawable.face_music;
                 break;
             case Emotion.NEUTRAL:
                 face = R.drawable.face_happy;
                 break;
-            case Emotion.SAD_THINKING:
+            case SAD_THINKING:
                 face = R.drawable.face_sad_thinking;
                 break;
             case Emotion.SAD:
                 face = R.drawable.face_sad;
                 break;
-            case Emotion.TALKING:
+            case TALKING:
                 face = R.drawable.face_talking;
                 break;
-            case Emotion.VERY_HAPPY:
+            case VERY_HAPPY:
                 face = R.drawable.face_very_happy;
                 break;
         }
@@ -745,6 +763,7 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public void speakText(String message, String id) {
         tts.speak(message, TextToSpeech.QUEUE_ADD, null, id);
+        showEmotion(TALKING);
     }
 
     private Action getMessageViewAction(RobotMessage robotMessage) {
