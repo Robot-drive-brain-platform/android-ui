@@ -31,6 +31,19 @@ android {
         exclude 'META-INF/LICENSE-FIREBASE.txt'
         exclude 'META-INF/NOTICE'
     }
+
+    packagingOptions {
+        exclude 'META-INF/DEPENDENCIES.txt'
+        exclude 'META-INF/LICENSE.txt'
+        exclude 'META-INF/NOTICE.txt'
+        exclude 'META-INF/NOTICE'
+        exclude 'META-INF/LICENSE'
+        exclude 'META-INF/DEPENDENCIES'
+        exclude 'META-INF/notice.txt'
+        exclude 'META-INF/license.txt'
+        exclude 'META-INF/dependencies.txt'
+        exclude 'META-INF/LGPL2.1'
+    }
 }
 
 dependencies {
@@ -70,7 +83,16 @@ dependencies {
 
     // Timber logging
     compile 'com.jakewharton.timber:timber:4.5.1'
+
+    // api.ai
+    compile 'ai.api:libai:1.4.7'
+    compile 'ai.api:sdk:2.0.4@aar'
+    // api.ai SDK dependencies
+    compile 'com.google.code.gson:gson:2.7'
+    compile 'commons-io:commons-io:2.4'
+
 }
+
 
 apply plugin: 'com.google.gms.google-services'
 

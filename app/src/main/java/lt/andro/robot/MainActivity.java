@@ -1,5 +1,6 @@
 package lt.andro.robot;
 
+import android.Manifest;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
@@ -72,6 +73,8 @@ public class MainActivity extends AppCompatActivity implements
         BluetoothSPP.BluetoothStateListener,
         BluetoothSPP.OnDataReceivedListener {
 
+    public static final String RECORD_AUDIO_PERMISSION = Manifest.permission.RECORD_AUDIO;
+
     private static final int EMOTION_HAPPY = 201;
     private static final int EMOTION_NEUTRAL = 202;
     private static final int EMOTION_SAD = 203;
@@ -113,6 +116,7 @@ public class MainActivity extends AppCompatActivity implements
     private TextToSpeech tts;
     private BluetoothSPP bt;
     private Handler handler;
+    private PermissionsController permissionsController;
 
     @Retention(SOURCE)
     @IntDef({
@@ -230,6 +234,68 @@ public class MainActivity extends AppCompatActivity implements
     private EditText mMessageEditText;
     private FirebaseRemoteConfig mFirebaseRemoteConfig;
     private GoogleApiClient mGoogleApiClient;
+
+    private void executeCommand(String text) {
+        switch (text) {
+            case "#emotion-happy":
+                showEmotion(EMOTION_HAPPY);
+                return;
+            case "#emotion-neutral":
+                showEmotion(EMOTION_NEUTRAL);
+                return;
+            case "#emotion-sad":
+                showEmotion(EMOTION_SAD);
+                return;
+            case "#drive-north-west":
+                drive(DIRECTION_NORTH_WEST);
+                return;
+            case "#drive-upward":
+                drive(DIRECTION_UPWARD);
+                return;
+            case "#drive-north-east":
+                drive(DIRECTION_NORTH_EAST);
+                return;
+            case "#drive-left":
+                drive(DIRECTION_LEFT);
+                return;
+            case "#drive-left-quick":
+                drive(DIRECTION_LEFT_QUICK);
+                return;
+            case "#drive-around":
+                drive(DIRECTION_AROUND);
+                return;
+            case "#drive-right":
+                drive(DIRECTION_RIGHT);
+                return;
+            case "#drive-right-quick":
+                drive(DIRECTION_RIGHT_QUICK);
+                return;
+            case "#drive-south-west":
+                drive(DIRECTION_SOUTH_WEST);
+                return;
+            case "#drive-back":
+                drive(DIRECTION_BACK);
+                return;
+            case "#drive-south-east":
+                drive(DIRECTION_SOUTH_EAST);
+                return;
+            case "#play-music":
+                playMusic();
+                return;
+            case "#led-on":
+                turnLed(true);
+                return;
+            case "#led-off":
+                turnLed(false);
+                return;
+            case "#celebrate-lithuanian-birthday":
+                sendBluetoothCommandDirect(COMMAND_LETTER_FLAG_ON);
+                sendDelayed(DELAY_LONG, COMMAND_LETTER_FLAG_OFF);
+                return;
+            default:
+                Timber.e("Unknown command: " + text);
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -414,68 +480,15 @@ public class MainActivity extends AppCompatActivity implements
         }
 
         handler = new Handler();
+
+
+        initAudioRecognition();
     }
 
-    private void executeCommand(String text) {
-        switch (text) {
-            case "#emotion-happy":
-                showEmotion(EMOTION_HAPPY);
-                return;
-            case "#emotion-neutral":
-                showEmotion(EMOTION_NEUTRAL);
-                return;
-            case "#emotion-sad":
-                showEmotion(EMOTION_SAD);
-                return;
-            case "#drive-north-west":
-                drive(DIRECTION_NORTH_WEST);
-                return;
-            case "#drive-upward":
-                drive(DIRECTION_UPWARD);
-                return;
-            case "#drive-north-east":
-                drive(DIRECTION_NORTH_EAST);
-                return;
-            case "#drive-left":
-                drive(DIRECTION_LEFT);
-                return;
-            case "#drive-left-quick":
-                drive(DIRECTION_LEFT_QUICK);
-                return;
-            case "#drive-around":
-                drive(DIRECTION_AROUND);
-                return;
-            case "#drive-right":
-                drive(DIRECTION_RIGHT);
-                return;
-            case "#drive-right-quick":
-                drive(DIRECTION_RIGHT_QUICK);
-                return;
-            case "#drive-south-west":
-                drive(DIRECTION_SOUTH_WEST);
-                return;
-            case "#drive-back":
-                drive(DIRECTION_BACK);
-                return;
-            case "#drive-south-east":
-                drive(DIRECTION_SOUTH_EAST);
-                return;
-            case "#play-music":
-                playMusic();
-                return;
-            case "#led-on":
-                turnLed(true);
-                return;
-            case "#led-off":
-                turnLed(false);
-                return;
-            case "#celebrate-lithuanian-birthday":
-                sendBluetoothCommandDirect(COMMAND_LETTER_FLAG_ON);
-                sendDelayed(DELAY_LONG, COMMAND_LETTER_FLAG_OFF);
-                return;
-            default:
-                Timber.e("Unknown command: " + text);
-        }
+    private void initAudioRecognition() {
+        permissionsController = new PermissionsControllerImpl(this, this);
+        if (!permissionsController.hasPermissionGranted(RECORD_AUDIO_PERMISSION))
+            permissionsController.requestPermission(RECORD_AUDIO_PERMISSION);
     }
 
     private void turnLed(boolean ledLightingState) {
