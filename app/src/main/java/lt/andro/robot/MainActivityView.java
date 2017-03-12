@@ -18,4 +18,6 @@ interface MainActivityView {
     void speakText(String message, String id);
 
     void celebrate();
+
+    void turnLed(boolean ledLightingState);
 }

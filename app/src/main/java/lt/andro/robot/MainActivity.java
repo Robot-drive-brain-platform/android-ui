@@ -592,13 +592,13 @@ public class MainActivity extends AppCompatActivity implements
         voiceController = new VoiceController(this, this);
     }
 
-    private void turnLed(boolean ledLightingState) {
+    @Override
+    public void turnLed(boolean ledLightingState) {
         if (ledLightingState) {
             sendBluetoothCommandDirect(COMMAND_LED_ON);
         } else {
             sendBluetoothCommandDirect(COMMAND_LED_OFF);
         }
-
     }
 
     private void playMusic() {

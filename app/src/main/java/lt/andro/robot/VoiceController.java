@@ -79,6 +79,9 @@ class VoiceController implements AIListener {
                 break;
             case "input.welcome":
                 break;
+            case "switch-light":
+                onLightSwitchReceived(action, result);
+                break;
             case "drive":
                 onDriveActionReceived(action, result);
                 break;
@@ -88,6 +91,23 @@ class VoiceController implements AIListener {
                 String unknown = "Unknown action " + action;
                 view.showMessage(unknown);
                 Timber.e(unknown);
+        }
+    }
+
+    @DebugLog
+    private void onLightSwitchReceived(String action, Result result) {
+        if (result == null) return;
+        HashMap<String, JsonElement> parameters = result.getParameters();
+        if (parameters != null) {
+            JsonElement stateElement = parameters.get("light-state");
+            if (stateElement != null) {
+                String state = stateElement.getAsString();
+                if (state.equalsIgnoreCase("on")) {
+                    view.turnLed(true);
+                } else {
+                    view.turnLed(false);
+                }
+            }
         }
     }
 
