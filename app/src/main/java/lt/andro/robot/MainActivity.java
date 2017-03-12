@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.speech.tts.TextToSpeech;
 import android.support.annotation.IntDef;
@@ -107,10 +108,11 @@ public class MainActivity extends AppCompatActivity implements
     public static final String COMMAND_LETTER_LED_ON = "X";
     public static final String COMMAND_LETTER_LED_OFF = "x";
     public static final String COMMAND_LETTER_STOP = "S";
-    private static final int DELAY_LONG = 200;
+    private static final int DELAY_LONG = 3000;
 
     private TextToSpeech tts;
     private BluetoothSPP bt;
+    private Handler handler;
 
     @Retention(SOURCE)
     @IntDef({
@@ -410,6 +412,8 @@ public class MainActivity extends AppCompatActivity implements
         if (!bt.isBluetoothAvailable()) {
             showMessage("Bluetooth is not available.");
         }
+
+        handler = new Handler();
     }
 
     private void executeCommand(String text) {
@@ -472,7 +476,13 @@ public class MainActivity extends AppCompatActivity implements
         // FIXME
     }
 
-    private void sendDelayed(int delayLong, @RobotCommand String command) {
+    private void sendDelayed(long delay, @RobotCommand final String command) {
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                sendBluetoothCommandDirect(command);
+            }
+        }, delay);
     }
 
     private void drive(@Direction int direction) {
@@ -482,34 +492,34 @@ public class MainActivity extends AppCompatActivity implements
                 turnAround();
                 break;
             case DIRECTION_BACK:
-                sendBluetoothCommand(BT_REPEAT_COUNT_LONG, COMMAND_LETTER_BACK);
+                sendBluetoothCommand(BT_REPEAT_COUNT_LONG, COMMAND_LETTER_BACK, true);
                 break;
             case DIRECTION_LEFT:
-                sendBluetoothCommand(BT_REPEAT_COUNT_LONG, COMMAND_LETTER_LEFT);
+                sendBluetoothCommand(BT_REPEAT_COUNT_LONG, COMMAND_LETTER_LEFT, true);
                 break;
             case DIRECTION_LEFT_QUICK:
-                sendBluetoothCommand(BT_REPEAT_COUNT_LONG, COMMAND_LETTER_LEFT_QUICK);
+                sendBluetoothCommand(BT_REPEAT_COUNT_LONG, COMMAND_LETTER_LEFT_QUICK, true);
                 break;
             case DIRECTION_NORTH_EAST:
-                sendBluetoothCommand(BT_REPEAT_COUNT_LONG, COMMAND_LETTER_NORTH_EAST);
+                sendBluetoothCommand(BT_REPEAT_COUNT_LONG, COMMAND_LETTER_NORTH_EAST, true);
                 break;
             case DIRECTION_NORTH_WEST:
-                sendBluetoothCommand(BT_REPEAT_COUNT_LONG, COMMAND_LETTER_NORTH_WEST);
+                sendBluetoothCommand(BT_REPEAT_COUNT_LONG, COMMAND_LETTER_NORTH_WEST, true);
                 break;
             case DIRECTION_RIGHT:
-                sendBluetoothCommand(BT_REPEAT_COUNT_LONG, COMMAND_LETTER_RIGHT);
+                sendBluetoothCommand(BT_REPEAT_COUNT_LONG, COMMAND_LETTER_RIGHT, true);
                 break;
             case DIRECTION_RIGHT_QUICK:
-                sendBluetoothCommand(BT_REPEAT_COUNT_LONG, COMMAND_LETTER_RIGHT_QUICK);
+                sendBluetoothCommand(BT_REPEAT_COUNT_LONG, COMMAND_LETTER_RIGHT_QUICK, true);
                 break;
             case DIRECTION_SOUTH_EAST:
-                sendBluetoothCommand(BT_REPEAT_COUNT_LONG, COMMAND_LETTER_SOUTH_EAST);
+                sendBluetoothCommand(BT_REPEAT_COUNT_LONG, COMMAND_LETTER_SOUTH_EAST, true);
                 break;
             case DIRECTION_SOUTH_WEST:
-                sendBluetoothCommand(BT_REPEAT_COUNT_LONG, COMMAND_LETTER_SOUTH_WEST);
+                sendBluetoothCommand(BT_REPEAT_COUNT_LONG, COMMAND_LETTER_SOUTH_WEST, true);
                 break;
             case DIRECTION_UPWARD:
-                sendBluetoothCommand(BT_REPEAT_COUNT_LONG, COMMAND_LETTER_FORWARD);
+                sendBluetoothCommand(BT_REPEAT_COUNT_LONG, COMMAND_LETTER_FORWARD, true);
                 break;
         }
     }
@@ -518,7 +528,7 @@ public class MainActivity extends AppCompatActivity implements
 //        sendBluetoothCommand(BT_REPEAT_COUNT_SHORT, COMMAND_LETTER_NORTH_EAST);
 //        sendBluetoothCommand(BT_REPEAT_COUNT_SHORT, COMMAND_LETTER_SOUTH_WEST);
 //        sendBluetoothCommand(BT_REPEAT_COUNT_SHORT, COMMAND_LETTER_NORTH_EAST);
-        sendBluetoothCommand(BT_REPEAT_COUNT_SINGLE, COMMAND_LETTER_STOP);
+        sendBluetoothCommand(BT_REPEAT_COUNT_SINGLE, COMMAND_LETTER_STOP, true);
     }
 
     @DebugLog
@@ -527,6 +537,15 @@ public class MainActivity extends AppCompatActivity implements
             sendBluetoothCommandDirect(commandLetter);
         }
     }
+
+    @DebugLog
+    private void sendBluetoothCommand(@BluetoothCommandRepeat int repeatCount, @RobotCommand String commandLetter, boolean stopAfterDelay) {
+        sendBluetoothCommand(repeatCount, commandLetter);
+        if (stopAfterDelay) {
+            sendDelayed(DELAY_LONG, COMMAND_LETTER_STOP);
+        }
+    }
+
 
     @DebugLog
     private void sendBluetoothCommandDirect(@RobotCommand String commandLetter) {
