@@ -23,6 +23,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.firebase.ui.database.FirebaseRecyclerAdapter;
@@ -52,12 +53,49 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
+import app.akexorcist.bluetotohspp.library.BluetoothSPP;
+import app.akexorcist.bluetotohspp.library.BluetoothState;
+import app.akexorcist.bluetotohspp.library.DeviceList;
 import de.hdodenhof.circleimageview.CircleImageView;
+import hugo.weaving.DebugLog;
 
 public class MainActivity extends AppCompatActivity implements
-        GoogleApiClient.OnConnectionFailedListener {
+        GoogleApiClient.OnConnectionFailedListener,
+        MainActivityView,
+        BluetoothSPP.BluetoothStateListener,
+        BluetoothSPP.OnDataReceivedListener {
 
     private TextToSpeech tts;
+    private BluetoothSPP bt;
+
+    @DebugLog
+    @Override
+    public void showMessage(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+    }
+
+    @Override
+    public void onServiceStateChanged(int state) {
+        switch (state) {
+            case BluetoothState.STATE_CONNECTED:
+                showMessage("Bluetooth: Connected");
+                return;
+            case BluetoothState.STATE_CONNECTING:
+                showMessage("Bluetooth: Connecting");
+                return;
+            case BluetoothState.STATE_LISTEN:
+                showMessage("Bluetooth: Listen");
+                return;
+            case BluetoothState.STATE_NONE:
+                showMessage("Bluetooth: None");
+                return;
+            case BluetoothState.STATE_NULL:
+                showMessage("Bluetooth: Null");
+                return;
+            default:
+                showMessage("Unknown message");
+        }
+    }
 
     @SuppressWarnings("WeakerAccess")
     public static class MessageViewHolder extends RecyclerView.ViewHolder {
@@ -187,6 +225,8 @@ public class MainActivity extends AppCompatActivity implements
                     String text = item.getText();
                     if (!text.startsWith("#")) {
                         speakText(text, item.getId());
+                    } else {
+                        executeCommand(text);
                     }
                 }
             }
@@ -266,6 +306,51 @@ public class MainActivity extends AppCompatActivity implements
             }
         });
         tts.setLanguage(Locale.US);
+
+        bt = new BluetoothSPP(this);
+
+        bt.setBluetoothStateListener(this);
+        bt.setOnDataReceivedListener(this);
+        bt.setupService();
+
+        if (!bt.isBluetoothAvailable()) {
+            bt.send("6", true);
+            showMessage("Bluetooth is not available.");
+        }
+    }
+
+    private void executeCommand(String text) {
+        bt.send("F", true);
+    }
+
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if (bt.isBluetoothEnabled()) {
+            bt.startService(BluetoothState.DEVICE_OTHER);
+            bt.autoConnect(getString(R.string.device_name));
+        } else {
+            Toast.makeText(this, "Bluetooth is not enabled", Toast.LENGTH_SHORT).show();
+            openBluetoothSettings();
+        }
+    }
+
+    private void openBluetoothSettings() {
+        Intent intent = new Intent(getApplicationContext(), DeviceList.class);
+        startActivityForResult(intent, BluetoothState.REQUEST_CONNECT_DEVICE);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        bt.stopService();
+    }
+
+    @DebugLog
+    @Override
+    public void onDataReceived(byte[] data, String message) {
+        showMessage("BT: " + message);
     }
 
     private void speakText(String message, String id) {

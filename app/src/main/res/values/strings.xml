@@ -12,4 +12,5 @@
     <string name="fresh_config">Fresh Config</string>
     <string name="cause_crash">Cause Crash</string>
     <string name="main_send">SEND</string>
+    <string name="device_name">RobotBrain</string>
 </resources>
