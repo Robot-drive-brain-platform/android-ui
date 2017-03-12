@@ -15,4 +15,5 @@
     <string name="device_name">RobotBrain</string>
     <string name="robot_face_content_description">Robot face</string>
     <string name="voice_control_button">Voice control button</string>
+    <string name="settings">Settings</string>
 </resources>

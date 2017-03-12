@@ -65,10 +65,13 @@ import app.akexorcist.bluetotohspp.library.BluetoothSPP;
 import app.akexorcist.bluetotohspp.library.BluetoothState;
 import app.akexorcist.bluetotohspp.library.DeviceList;
 import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
 import de.hdodenhof.circleimageview.CircleImageView;
 import hugo.weaving.DebugLog;
-import timber.log.Timber;
 
+import static android.view.View.GONE;
+import static android.view.View.VISIBLE;
 import static java.lang.annotation.RetentionPolicy.SOURCE;
 import static lt.andro.robot.MainActivity.BluetoothCommandRepeat.COUNT_LONG;
 import static lt.andro.robot.MainActivity.BluetoothCommandRepeat.COUNT_SINGLE;
@@ -122,6 +125,7 @@ public class MainActivity extends AppCompatActivity implements
     private BluetoothSPP bt;
     private Handler handler;
     private PermissionsController permissionsController;
+    private VoiceController voiceController;
 
     @Retention(SOURCE)
     @IntDef({
@@ -134,7 +138,7 @@ public class MainActivity extends AppCompatActivity implements
             Emotion.TALKING,
             Emotion.VERY_HAPPY,
     })
-    @interface Emotion {
+    public @interface Emotion {
         int HAPPY = 201;
         int NEUTRAL = 202;
         int SAD = 203;
@@ -159,7 +163,7 @@ public class MainActivity extends AppCompatActivity implements
             BACK,
             SOUTH_EAST,
     })
-    @interface Direction {
+    public @interface Direction {
         int NORTH_WEST = 301;
         int UPWARD = 302;
         int NORTH_EAST = 303;
@@ -192,7 +196,7 @@ public class MainActivity extends AppCompatActivity implements
             COMMAND_STOP,
             SPEED_NORMAL,
     })
-    @interface RobotCommand {
+    public @interface RobotCommand {
         String COMMAND_NORTH_WEST = "G";
         String COMMAND_FORWARD = "F";
         String COMMAND_NORTH_EAST = "I";
@@ -208,12 +212,12 @@ public class MainActivity extends AppCompatActivity implements
         String COMMAND_LED_ON = "X";
         String COMMAND_LED_OFF = "x";
         String COMMAND_STOP = "S";
-        String SPEED_NORMAL = "6";
+        String SPEED_NORMAL = "3";
     }
 
     @Retention(SOURCE)
     @IntDef()
-    @interface BluetoothCommandRepeat {
+    public @interface BluetoothCommandRepeat {
         int COUNT_SINGLE = 1;
         int COUNT_SHORT = 3;
         int COUNT_NORMAL = 5;
@@ -224,7 +228,7 @@ public class MainActivity extends AppCompatActivity implements
     @DebugLog
     @Override
     public void showMessage(String message) {
-        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -276,19 +280,30 @@ public class MainActivity extends AppCompatActivity implements
     private String mPhotoUrl;
 
     private Button mSendButton;
-    private RecyclerView mMessageRecyclerView;
+    @BindView(R.id.messageRecyclerView)
+    public RecyclerView mMessageRecyclerView;
     private LinearLayoutManager mLinearLayoutManager;
     private FirebaseRecyclerAdapter<RobotMessage, MessageViewHolder> mFirebaseAdapter;
-    private ProgressBar mProgressBar;
+
+    @BindView(R.id.progressBar)
+    public ProgressBar mProgressBar;
+
     private DatabaseReference mFirebaseDatabaseReference;
     private FirebaseAuth mFirebaseAuth;
     private FirebaseUser mFirebaseUser;
     private FirebaseAnalytics mFirebaseAnalytics;
-    private EditText mMessageEditText;
+
+    @BindView(R.id.messageEditText)
+    public EditText mMessageEditText;
+    @BindView(R.id.main_message_input_container)
+    public View messageInputContainer;
+
     private FirebaseRemoteConfig mFirebaseRemoteConfig;
     private GoogleApiClient mGoogleApiClient;
 
-    private void executeCommand(String text) {
+    @DebugLog
+    @Override
+    public void executeCommand(String text) {
         switch (text) {
             case "#emotion-happy":
                 showEmotion(HAPPY);
@@ -342,18 +357,34 @@ public class MainActivity extends AppCompatActivity implements
                 turnLed(false);
                 return;
             case "#celebrate-lithuanian-birthday":
-                sendBluetoothCommandDirect(COMMAND_FLAG_ON);
-                sendDelayed(DELAY_LONG, COMMAND_FLAG_OFF);
+                celebrate();
                 return;
             default:
-                Timber.e("Unknown command: " + text);
+                showMessage("Unknown command: " + text);
         }
+    }
+
+    @DebugLog
+    @Override
+    public void celebrate() {
+        sendBluetoothCommandDirect(COMMAND_FLAG_ON);
+        sendDelayed(800, COMMAND_FLAG_OFF);
+        sendDelayed(1500, COMMAND_FLAG_ON);
+        sendDelayed(2000, COMMAND_FLAG_OFF);
+        sendDelayed(2500, COMMAND_FLAG_ON);
+        sendDelayed(3000, COMMAND_FLAG_OFF);
+    }
+
+    @Override
+    public void showListening(boolean listening) {
+        voiceButton.setImageResource(listening ? R.drawable.ic_mic_white_24dp : R.drawable.ic_mic_off_white_24dp);
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        ButterKnife.bind(this);
 
         SharedPreferences mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         mUsername = ANONYMOUS;
@@ -380,8 +411,6 @@ public class MainActivity extends AppCompatActivity implements
                 .addApi(Auth.GOOGLE_SIGN_IN_API)
                 .build();
 
-        mProgressBar = (ProgressBar) findViewById(R.id.progressBar);
-        mMessageRecyclerView = (RecyclerView) findViewById(R.id.messageRecyclerView);
         mLinearLayoutManager = new LinearLayoutManager(this);
         mLinearLayoutManager.setStackFromEnd(true);
 
@@ -427,6 +456,7 @@ public class MainActivity extends AppCompatActivity implements
             @Override
             public void onItemRangeInserted(int positionStart, int itemCount) {
                 super.onItemRangeInserted(positionStart, itemCount);
+                mProgressBar.setVisibility(GONE);
                 int msgCount = mFirebaseAdapter.getItemCount();
                 int lastVisiblePosition = mLinearLayoutManager.findLastCompletelyVisibleItemPosition();
                 // If the recycler view is initially being loaded or the user is at the bottom of the list, scroll
@@ -474,7 +504,6 @@ public class MainActivity extends AppCompatActivity implements
         // Fetch remote config.
         fetchConfig();
 
-        mMessageEditText = (EditText) findViewById(R.id.messageEditText);
         mMessageEditText.setFilters(new InputFilter[]{new InputFilter.LengthFilter(mSharedPreferences
                 .getInt(RobotPreferences.ROBOT_MSG_LENGTH, DEFAULT_MSG_LENGTH_LIMIT))});
         mMessageEditText.addTextChangedListener(new TextWatcher() {
@@ -538,10 +567,27 @@ public class MainActivity extends AppCompatActivity implements
         initAudioRecognition();
     }
 
+    @OnClick(R.id.main_voice_button)
+    public void onVoiceButtonClick(View button) {
+        voiceController.onVoiceButtonClicked();
+    }
+
+    @OnClick(R.id.main_settings_button)
+    public void onSettingsButtonClick(View button) {
+        boolean visible = mMessageRecyclerView.getVisibility() != VISIBLE;
+
+        mMessageRecyclerView.setVisibility(visible ? VISIBLE : GONE);
+        messageInputContainer.setVisibility(visible ? VISIBLE : GONE);
+
+        faceView.setVisibility(visible ? GONE : VISIBLE);
+    }
+
     private void initAudioRecognition() {
         permissionsController = new PermissionsControllerImpl(this, this);
-        if (!permissionsController.hasPermissionGranted(RECORD_AUDIO_PERMISSION))
+        if (!permissionsController.hasPermissionGranted(RECORD_AUDIO_PERMISSION)) {
             permissionsController.requestPermission(RECORD_AUDIO_PERMISSION);
+        }
+        voiceController = new VoiceController(this, this);
     }
 
     private void turnLed(boolean ledLightingState) {
@@ -554,7 +600,6 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     private void playMusic() {
-        // FIXME
     }
 
     private void sendDelayed(long delay, @RobotCommand final String command) {
@@ -633,7 +678,8 @@ public class MainActivity extends AppCompatActivity implements
         bt.send(commandLetter, true);
     }
 
-    private void showEmotion(@Emotion int emotion) {
+    @Override
+    public void showEmotion(@Emotion int emotion) {
         @DrawableRes int face = R.drawable.face_happy;
         switch (emotion) {
             case Emotion.EXCLAMATION:
@@ -694,7 +740,8 @@ public class MainActivity extends AppCompatActivity implements
         showMessage("BT: " + message);
     }
 
-    private void speakText(String message, String id) {
+    @Override
+    public void speakText(String message, String id) {
         tts.speak(message, TextToSpeech.QUEUE_ADD, null, id);
     }
 
@@ -835,5 +882,4 @@ public class MainActivity extends AppCompatActivity implements
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
         Log.d(TAG, "onConnectionFailed:" + connectionResult);
     }
-
 }
