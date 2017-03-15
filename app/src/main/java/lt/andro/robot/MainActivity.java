@@ -131,7 +131,6 @@ public class MainActivity extends AppCompatActivity implements
     private TextToSpeech tts;
     private BluetoothSPP bt;
     private Handler handler;
-    private PermissionsController permissionsController;
     private VoiceController voiceController;
 
     @Retention(SOURCE)
@@ -145,7 +144,7 @@ public class MainActivity extends AppCompatActivity implements
             TALKING,
             VERY_HAPPY,
     })
-    public @interface Emotion {
+    @interface Emotion {
         int HAPPY = 201;
         int NEUTRAL = 202;
         int SAD = 203;
@@ -170,7 +169,7 @@ public class MainActivity extends AppCompatActivity implements
             BACK,
             SOUTH_EAST,
     })
-    public @interface Direction {
+    @interface Direction {
         int NORTH_WEST = 301;
         int UPWARD = 302;
         int NORTH_EAST = 303;
@@ -202,7 +201,7 @@ public class MainActivity extends AppCompatActivity implements
             COMMAND_STOP,
             SPEED_NORMAL,
     })
-    public @interface RobotCommand {
+    @interface RobotCommand {
         String COMMAND_NORTH_WEST = "G";
         String COMMAND_FORWARD = "F";
         String COMMAND_NORTH_EAST = "I";
@@ -220,9 +219,10 @@ public class MainActivity extends AppCompatActivity implements
         String SPEED_NORMAL = "3";
     }
 
+    @SuppressWarnings("unused")
     @Retention(SOURCE)
     @IntDef()
-    public @interface BluetoothCommandRepeat {
+    @interface BluetoothCommandRepeat {
         int COUNT_SINGLE = 1;
         int COUNT_SHORT = 3;
         int COUNT_NORMAL = 5;
@@ -402,7 +402,18 @@ public class MainActivity extends AppCompatActivity implements
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
 
-        SharedPreferences mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        handler = new Handler();
+
+        if (initFirebaseAuthentication()) return;
+        initFirebaseDatabase();
+        initFirebaseAnalytics();
+        initFirebaseRemoteConfig();
+        initTextToSpeech();
+        initBluetooth();
+        initAudioRecognition();
+    }
+
+    private boolean initFirebaseAuthentication() {
         mUsername = ANONYMOUS;
 
         // Initialize Firebase Auth
@@ -413,7 +424,7 @@ public class MainActivity extends AppCompatActivity implements
             // Not signed in, launch the Sign In activity
             startActivity(new Intent(this, SignInActivity.class));
             finish();
-            return;
+            return true;
         } else {
             mUsername = mFirebaseUser.getDisplayName();
             Uri photoUrl = mFirebaseUser.getPhotoUrl();
@@ -426,7 +437,10 @@ public class MainActivity extends AppCompatActivity implements
                 .enableAutoManage(this /* FragmentActivity */, this /* OnConnectionFailedListener */)
                 .addApi(Auth.GOOGLE_SIGN_IN_API)
                 .build();
+        return false;
+    }
 
+    private void initFirebaseDatabase() {
         mLinearLayoutManager = new LinearLayoutManager(this);
         mLinearLayoutManager.setStackFromEnd(true);
 
@@ -495,10 +509,14 @@ public class MainActivity extends AppCompatActivity implements
 
         mMessageRecyclerView.setLayoutManager(mLinearLayoutManager);
         mMessageRecyclerView.setAdapter(mFirebaseAdapter);
+    }
 
+    private void initFirebaseAnalytics() {
         // Initialize Firebase Measurement.
         mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
+    }
 
+    private void initFirebaseRemoteConfig() {
         // Initialize Firebase Remote Config.
         mFirebaseRemoteConfig = FirebaseRemoteConfig.getInstance();
 
@@ -519,6 +537,7 @@ public class MainActivity extends AppCompatActivity implements
 
         // Fetch remote config.
         fetchConfig();
+        SharedPreferences mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
 
         mMessageEditText.setFilters(new InputFilter[]{new InputFilter.LengthFilter(mSharedPreferences
                 .getInt(RobotPreferences.ROBOT_MSG_LENGTH, DEFAULT_MSG_LENGTH_LIMIT))});
@@ -540,20 +559,9 @@ public class MainActivity extends AppCompatActivity implements
             public void afterTextChanged(Editable editable) {
             }
         });
+    }
 
-        mSendButton = (Button) findViewById(R.id.sendButton);
-        mSendButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                String msg = mMessageEditText.getText().toString();
-                RobotMessage robotMessage = new RobotMessage(msg, mUsername,
-                        mPhotoUrl);
-                mFirebaseDatabaseReference.child(MESSAGES_CHILD).push().setValue(robotMessage);
-                mMessageEditText.setText("");
-                mFirebaseAnalytics.logEvent(MESSAGE_SENT_EVENT, null);
-            }
-        });
-
+    private void initTextToSpeech() {
         tts = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
             @Override
             public void onInit(int status) {
@@ -578,7 +586,9 @@ public class MainActivity extends AppCompatActivity implements
                 });
             }
         });
+    }
 
+    private void initBluetooth() {
         bt = new BluetoothSPP(this);
 
         bt.setBluetoothStateListener(this);
@@ -588,16 +598,21 @@ public class MainActivity extends AppCompatActivity implements
         if (!bt.isBluetoothAvailable()) {
             showMessage("Bluetooth is not available.");
         }
-
-        handler = new Handler();
-
-
-        initAudioRecognition();
     }
 
     @OnClick(R.id.main_voice_button)
     public void onVoiceButtonClick(View button) {
         voiceController.onVoiceButtonClicked();
+    }
+
+    @OnClick(R.id.sendButton)
+    public void onSendButtonClick(View button) {
+        String msg = mMessageEditText.getText().toString();
+        RobotMessage robotMessage = new RobotMessage(msg, mUsername,
+                mPhotoUrl);
+        mFirebaseDatabaseReference.child(MESSAGES_CHILD).push().setValue(robotMessage);
+        mMessageEditText.setText("");
+        mFirebaseAnalytics.logEvent(MESSAGE_SENT_EVENT, null);
     }
 
     @OnClick(R.id.main_settings_button)
@@ -611,7 +626,7 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     private void initAudioRecognition() {
-        permissionsController = new PermissionsControllerImpl(this, this);
+        PermissionsController permissionsController = new PermissionsControllerImpl(this, this);
         if (!permissionsController.hasPermissionGranted(RECORD_AUDIO_PERMISSION)) {
             permissionsController.requestPermission(RECORD_AUDIO_PERMISSION);
         }
