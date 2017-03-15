@@ -25,10 +25,12 @@ import static lt.andro.robot.MainActivity.Emotion.SAD_THINKING;
  * @since 2017-03-12
  */
 class VoiceController implements AIListener {
+    private static final int MAX_FAILURES_TO_STOP = 3;
     private final Handler handler;
     private MainActivityView view;
     private final AIService aiService;
     private boolean continuousListening = false;
+    private int failuresCount;
 
     @DebugLog
     @SuppressWarnings("WeakerAccess")
@@ -45,6 +47,7 @@ class VoiceController implements AIListener {
     @DebugLog
     @Override
     public void onResult(AIResponse result) {
+        failuresCount = 0;
         Result res = result.getResult();
         if (res != null) {
             onResultReceived(res);
@@ -144,15 +147,18 @@ class VoiceController implements AIListener {
     @DebugLog
     @Override
     public void onError(AIError error) {
-        handler.postDelayed(
-                new Runnable() {
-                    @Override
-                    public void run() {
-                        continueListening();
-                    }
-                },
-                300
-        );
+        if (failuresCount >= MAX_FAILURES_TO_STOP) {
+            listen(false);
+        } else {
+            Runnable continueListening = new Runnable() {
+                @Override
+                public void run() {
+                    continueListening();
+                    failuresCount++;
+                }
+            };
+            handler.postDelayed(continueListening, 300);
+        }
     }
 
     @Override
@@ -180,6 +186,7 @@ class VoiceController implements AIListener {
     @SuppressWarnings("WeakerAccess")
     @DebugLog
     public void onVoiceButtonClicked() {
+        failuresCount = 0;
         listen(!continuousListening);
     }
 
