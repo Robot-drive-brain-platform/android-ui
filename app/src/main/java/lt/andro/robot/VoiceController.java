@@ -1,6 +1,7 @@
 package lt.andro.robot;
 
 import android.content.Context;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 
 import com.google.gson.JsonElement;
@@ -24,21 +25,21 @@ import static lt.andro.robot.MainActivity.Emotion.SAD_THINKING;
  * @since 2017-03-12
  */
 class VoiceController implements AIListener {
-    private Context context;
+    private final Handler handler;
     private MainActivityView view;
-    private final AIConfiguration config;
     private final AIService aiService;
+    private boolean continuousListening = false;
 
     @DebugLog
     @SuppressWarnings("WeakerAccess")
     public VoiceController(Context context, MainActivityView view) {
-        this.context = context;
         this.view = view;
-        config = new AIConfiguration("5b5862e0d90b4069af746eff2fd57267",
+        AIConfiguration config = new AIConfiguration("5b5862e0d90b4069af746eff2fd57267",
                 AIConfiguration.SupportedLanguages.English,
                 AIConfiguration.RecognitionEngine.System);
         aiService = AIService.getService(context, config);
         aiService.setListener(this);
+        handler = new Handler();
     }
 
     @DebugLog
@@ -58,7 +59,7 @@ class VoiceController implements AIListener {
         Fulfillment fulfillment = result.getFulfillment();
 
         if (fulfillment != null) {
-            onFulfillmentReceived(result, fulfillment);
+            onFulfillmentReceived(fulfillment);
         } else {
             Timber.e("Fulfilment not received");
         }
@@ -82,10 +83,10 @@ class VoiceController implements AIListener {
             case "input.welcome":
                 break;
             case "switch-light":
-                onLightSwitchReceived(action, result);
+                onLightSwitchReceived(result);
                 break;
             case "drive":
-                onDriveActionReceived(action, result);
+                onDriveActionReceived(result);
                 break;
             case "question.whats-my-purpose":
                 break;
@@ -97,7 +98,7 @@ class VoiceController implements AIListener {
     }
 
     @DebugLog
-    private void onLightSwitchReceived(String action, Result result) {
+    private void onLightSwitchReceived(Result result) {
         if (result == null) return;
         HashMap<String, JsonElement> parameters = result.getParameters();
         if (parameters != null) {
@@ -113,11 +114,13 @@ class VoiceController implements AIListener {
         }
     }
 
+    @DebugLog
     private void onCelebrateActionReceived() {
         view.celebrate();
     }
 
-    private void onDriveActionReceived(@NonNull String action, Result result) {
+    @DebugLog
+    private void onDriveActionReceived(Result result) {
         HashMap<String, JsonElement> params = result.getParameters();
         JsonElement directionElement = params.get("Direction");
         if (directionElement != null) {
@@ -129,19 +132,27 @@ class VoiceController implements AIListener {
 
     @DebugLog
     private void talkAndShow(String message) {
-        view.speakText(message, message);
+        view.speakText(message);
         view.showMessage(message);
     }
 
     @DebugLog
-    private void onFulfillmentReceived(Result result, @NonNull Fulfillment fulfillment) {
+    private void onFulfillmentReceived(@NonNull Fulfillment fulfillment) {
         talkAndShow(fulfillment.getSpeech());
     }
 
     @DebugLog
     @Override
     public void onError(AIError error) {
-        view.showListening(false);
+        handler.postDelayed(
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        continueListening();
+                    }
+                },
+                300
+        );
     }
 
     @Override
@@ -153,26 +164,46 @@ class VoiceController implements AIListener {
     @Override
     public void onListeningStarted() {
         view.showListening(true);
-
     }
 
     @DebugLog
     @Override
     public void onListeningCanceled() {
-        view.showListening(false);
-
+        listen(continuousListening);
     }
 
     @DebugLog
     @Override
     public void onListeningFinished() {
-        view.showListening(false);
-
     }
 
+    @SuppressWarnings("WeakerAccess")
     @DebugLog
     public void onVoiceButtonClicked() {
-        aiService.startListening();
-        view.showListening(true);
+        listen(!continuousListening);
+    }
+
+    @SuppressWarnings("WeakerAccess")
+    @DebugLog
+    public void listen(boolean listening) {
+        if (continuousListening && !listening) {
+            view.showMessage("Stop listening");
+        }
+
+        continuousListening = listening;
+
+        if (listening) {
+            aiService.startListening();
+            view.showListening(true);
+        } else {
+            aiService.stopListening();
+            view.showListening(false);
+        }
+    }
+
+    @SuppressWarnings("WeakerAccess")
+    @DebugLog
+    public void continueListening() {
+        listen(continuousListening);
     }
 }

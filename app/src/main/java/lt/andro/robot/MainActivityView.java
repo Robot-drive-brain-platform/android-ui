@@ -15,7 +15,7 @@ interface MainActivityView {
 
     void showListening(boolean listening);
 
-    void speakText(String message, String id);
+    void speakText(String message);
 
     void celebrate();
 

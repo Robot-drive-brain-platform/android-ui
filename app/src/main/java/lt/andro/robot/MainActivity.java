@@ -119,6 +119,7 @@ public class MainActivity extends AppCompatActivity implements
     public static final String RECORD_AUDIO_PERMISSION = Manifest.permission.RECORD_AUDIO;
     public static final int FLAG_SHAKE_DELAY = 800;
     public static final int DRIVE_DELAY = 1000;
+    private static final String SPEAK_UTTERANCE_ID = "SPEAK_UTTERANCE_ID";
 
     @BindView(R.id.main_voice_button)
     ImageButton voiceButton;
@@ -367,7 +368,7 @@ public class MainActivity extends AppCompatActivity implements
                 turnLed(false);
                 return;
             case "#celebrate-lithuanian-birthday":
-                speakText("Congratulation for 27th Lithuania's Restoration of Independence Day!", "from backend id");
+                speakText("Congratulation for 27th Lithuania's Restoration of Independence Day!");
                 celebrate();
                 return;
             default:
@@ -386,6 +387,7 @@ public class MainActivity extends AppCompatActivity implements
         sendDelayed(6 * FLAG_SHAKE_DELAY, COMMAND_LED_OFF);
     }
 
+    @DebugLog
     @Override
     public void showListening(boolean listening) {
         voiceButton.setImageResource(listening ? R.drawable.ic_mic_white_24dp : R.drawable.ic_mic_off_white_24dp);
@@ -483,7 +485,7 @@ public class MainActivity extends AppCompatActivity implements
                     RobotMessage item = mFirebaseAdapter.getItem(msgCount - 1);
                     String text = item.getText();
                     if (!text.startsWith("#")) {
-                        speakText(text, item.getId());
+                        speakText(text);
                     } else {
                         executeCommand(text);
                     }
@@ -564,6 +566,18 @@ public class MainActivity extends AppCompatActivity implements
             }
         });
         tts.setLanguage(Locale.US);
+        //noinspection deprecation
+        tts.setOnUtteranceCompletedListener(new TextToSpeech.OnUtteranceCompletedListener() {
+            @Override
+            public void onUtteranceCompleted(String utteranceId) {
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        voiceController.continueListening();
+                    }
+                });
+            }
+        });
 
         bt = new BluetoothSPP(this);
 
@@ -758,8 +772,8 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void speakText(String message, String id) {
-        tts.speak(message, TextToSpeech.QUEUE_ADD, null, id);
+    public void speakText(String message) {
+        tts.speak(message, TextToSpeech.QUEUE_ADD, null, SPEAK_UTTERANCE_ID);
         showEmotion(TALKING);
     }
 
